@@ -1,7 +1,7 @@
 # REXEL 移管ツール
 
 WordPress Studio（ローカル）で改修した REXEL のテーマを、
-バックアップして本番の WordPress（エックスサーバー等）へ移すための一式です。
+バックアップして本番の WordPress（エックスサーバー）へ移すための一式です。
 
 ## なぜこれが必要か
 
@@ -47,7 +47,13 @@ chmod +x *.sh
 デスクトップに `rexel-backup-<日時>` フォルダができます。
 テーマ zip・メディア・データベース・レポートが整理された状態で入ります。
 
-### 4. 本番へ移管する
+### 4. 本番（エックスサーバー）を準備する
+
+契約したばかりで中身が空の場合は、先に
+[`XSERVER-SETUP.md`](./XSERVER-SETUP.md) でドメインの紐付け・SSL・WordPress
+インストールを済ませてください。すでに WordPress が動いている場合はこの手順は不要です。
+
+### 5. 本番へ移管する
 
 [`MIGRATION-GUIDE.md`](./MIGRATION-GUIDE.md) の手順に従ってください。
 フェーズ0 の調査結果に応じて、3 つの移管ルートから選ぶ形になっています。
@@ -74,6 +80,7 @@ claude
 
 | ファイル | 内容 |
 |---|---|
+| `XSERVER-SETUP.md` | エックスサーバー側の初期セットアップ（ドメイン紐付け・SSL・WordPressインストール） |
 | `MIGRATION-GUIDE.md` | 移管手順の本体。移管ルートの選択、移管後の確認、トラブル対処 |
 | `scripts/inspect-studio-site.sh` | 現状調査（読み取り専用）。DB種類・有効テーマ・変更箇所を報告 |
 | `scripts/backup-rexel.sh` | バックアップとパッケージング。アップロード可能な zip を生成 |

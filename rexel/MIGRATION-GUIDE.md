@@ -1,6 +1,10 @@
 # REXEL — WordPress Studio から本番サーバーへの移管ガイド
 
-対象環境: WordPress Studio（ローカル） → エックスサーバー等のレンタルサーバー
+対象環境: WordPress Studio（ローカル） → エックスサーバー
+
+> **本番のエックスサーバーがまだ空（契約したばかり）の場合**は、先に
+> [`XSERVER-SETUP.md`](./XSERVER-SETUP.md) でドメインの紐付け・SSL・WordPressの
+> インストールを済ませてから、このガイドのフェーズ2に進んでください。
 
 ---
 
