@@ -50,8 +50,11 @@ chmod +x *.sh
 ### 4. 本番（エックスサーバー）を準備する
 
 契約したばかりで中身が空の場合は、先に
-[`XSERVER-SETUP.md`](./XSERVER-SETUP.md) でドメインの紐付け・SSL・WordPress
-インストールを済ませてください。すでに WordPress が動いている場合はこの手順は不要です。
+[`XSERVER-SETUP.md`](./XSERVER-SETUP.md) を進めてください。独自ドメインの
+接続を待たずに、エックスサーバー無料の初期ドメイン（`◯◯◯◯.xsrv.jp`）で
+WordPressインストールとREXELの移管まで完了できます（フェーズ1）。独自
+ドメインの接続はドメイン側の準備が整ってから（フェーズ2）で構いません。
+すでに WordPress が動いている場合はこの手順は不要です。
 
 ### 5. 本番へ移管する
 
@@ -80,7 +83,7 @@ claude
 
 | ファイル | 内容 |
 |---|---|
-| `XSERVER-SETUP.md` | エックスサーバー側の初期セットアップ（ドメイン紐付け・SSL・WordPressインストール） |
+| `XSERVER-SETUP.md` | エックスサーバー側の初期セットアップ。フェーズ1: 初期ドメインでWordPress稼働。フェーズ2: 独自ドメイン接続・SSL |
 | `MIGRATION-GUIDE.md` | 移管手順の本体。移管ルートの選択、移管後の確認、トラブル対処 |
 | `scripts/inspect-studio-site.sh` | 現状調査（読み取り専用）。DB種類・有効テーマ・変更箇所を報告 |
 | `scripts/backup-rexel.sh` | バックアップとパッケージング。アップロード可能な zip を生成 |
