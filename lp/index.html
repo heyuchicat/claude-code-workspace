@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEO対策サービス｜Googleマップ集客を最短で強化</title>
+<meta name="description" content="Googleビジネスプロフィールの最適化・口コミ管理・順位計測までワンストップで代行するMEO対策サービスです。">
+<style>
+  :root{
+    --navy:#12233f;
+    --navy-dark:#0b1729;
+    --accent:#1f7a5c;
+    --accent-light:#e8f4ee;
+    --gray-900:#1a1f29;
+    --gray-600:#5b6472;
+    --gray-200:#e4e7ec;
+    --gray-50:#f7f8fa;
+    --white:#ffffff;
+    --radius:12px;
+    --maxw:1080px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",Meiryo,-apple-system,BlinkMacSystemFont,sans-serif;
+    color:var(--gray-900);
+    background:var(--white);
+    line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  a{color:inherit;}
+  img{max-width:100%;}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px;}
+
+  header.site{
+    position:sticky;top:0;z-index:50;
+    background:rgba(255,255,255,0.92);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--gray-200);
+  }
+  header.site .wrap{display:flex;align-items:center;justify-content:space-between;height:64px;}
+  .logo{font-weight:700;font-size:1.1rem;letter-spacing:.02em;}
+  .logo span{color:var(--accent);}
+  nav.site a{margin-left:28px;font-size:.92rem;text-decoration:none;color:var(--gray-600);}
+  nav.site a:hover{color:var(--navy);}
+  .cta-btn{
+    display:inline-block;background:var(--accent);color:#fff!important;
+    padding:10px 22px;border-radius:999px;font-weight:700;font-size:.92rem;
+    text-decoration:none;white-space:nowrap;
+  }
+  .cta-btn:hover{background:#186b4f;}
+
+  .hero{
+    background:linear-gradient(160deg,var(--navy) 0%,var(--navy-dark) 100%);
+    color:#fff;
+    padding:88px 0 96px;
+    text-align:center;
+  }
+  .hero .badge{
+    display:inline-block;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);
+    padding:6px 16px;border-radius:999px;font-size:.8rem;margin-bottom:24px;letter-spacing:.04em;
+  }
+  .hero h1{
+    font-size:clamp(1.7rem,4vw,2.6rem);
+    margin:0 0 20px;
+    font-weight:800;
+    line-height:1.5;
+  }
+  .hero h1 em{color:#7fe0b8;font-style:normal;}
+  .hero p.lead{
+    font-size:1.05rem;color:rgba(255,255,255,.82);max-width:640px;margin:0 auto 36px;
+  }
+  .hero .actions{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;}
+  .btn-outline{
+    display:inline-block;padding:10px 26px;border-radius:999px;border:1px solid rgba(255,255,255,.5);
+    color:#fff;text-decoration:none;font-weight:600;font-size:.95rem;
+  }
+
+  section{padding:80px 0;}
+  section.alt{background:var(--gray-50);}
+  h2.section-title{
+    text-align:center;font-size:clamp(1.4rem,3vw,1.9rem);margin:0 0 12px;font-weight:800;color:var(--navy);
+  }
+  p.section-sub{text-align:center;color:var(--gray-600);max-width:560px;margin:0 auto 48px;font-size:.98rem;}
+
+  .problem-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;}
+  .problem-card{
+    background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);padding:28px 22px;
+  }
+  .problem-card .icon{font-size:1.6rem;margin-bottom:12px;}
+  .problem-card h3{margin:0 0 8px;font-size:1.02rem;color:var(--navy);}
+  .problem-card p{margin:0;color:var(--gray-600);font-size:.92rem;}
+
+  .feature-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;}
+  .feature{background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);padding:30px;}
+  .feature .num{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:34px;height:34px;border-radius:50%;background:var(--accent-light);color:var(--accent);
+    font-weight:800;font-size:.9rem;margin-bottom:14px;
+  }
+  .feature h3{margin:0 0 8px;font-size:1.05rem;color:var(--navy);}
+  .feature p{margin:0;color:var(--gray-600);font-size:.92rem;}
+
+  .flow{counter-reset:step;display:grid;gap:0;}
+  .flow-step{display:flex;gap:20px;padding:26px 0;border-bottom:1px solid var(--gray-200);}
+  .flow-step:last-child{border-bottom:none;}
+  .flow-step .step-num{
+    counter-increment:step;flex:0 0 auto;
+    width:40px;height:40px;border-radius:50%;background:var(--navy);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:800;
+  }
+  .flow-step .step-num::before{content:counter(step);}
+  .flow-step h3{margin:0 0 6px;font-size:1.02rem;color:var(--navy);}
+  .flow-step p{margin:0;color:var(--gray-600);font-size:.92rem;}
+
+  .pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;align-items:stretch;}
+  .plan{
+    background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);
+    padding:32px 28px;display:flex;flex-direction:column;
+  }
+  .plan.featured{border-color:var(--accent);box-shadow:0 8px 30px rgba(31,122,92,.12);position:relative;}
+  .plan.featured::before{
+    content:"おすすめ";position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+    background:var(--accent);color:#fff;font-size:.72rem;font-weight:700;padding:4px 14px;border-radius:999px;
+  }
+  .plan h3{margin:0 0 6px;font-size:1.1rem;color:var(--navy);}
+  .plan .price{font-size:1.9rem;font-weight:800;color:var(--navy);margin:6px 0 2px;}
+  .plan .price small{font-size:.85rem;font-weight:600;color:var(--gray-600);}
+  .plan .setup{font-size:.82rem;color:var(--gray-600);margin-bottom:20px;}
+  .plan ul{list-style:none;margin:0 0 24px;padding:0;flex:1;}
+  .plan li{font-size:.9rem;color:var(--gray-900);padding:8px 0;border-top:1px solid var(--gray-200);}
+  .plan li:first-child{border-top:none;}
+  .plan li::before{content:"✓ ";color:var(--accent);font-weight:800;}
+
+  .faq-item{border-bottom:1px solid var(--gray-200);padding:20px 0;}
+  .faq-item h3{margin:0 0 8px;font-size:.98rem;color:var(--navy);}
+  .faq-item p{margin:0;color:var(--gray-600);font-size:.9rem;}
+
+  .cta-band{
+    background:linear-gradient(160deg,var(--navy) 0%,var(--navy-dark) 100%);color:#fff;text-align:center;
+  }
+  .cta-band h2{font-size:clamp(1.3rem,3vw,1.7rem);margin:0 0 10px;}
+  .cta-band p{color:rgba(255,255,255,.8);margin:0 0 28px;}
+
+  form.contact{
+    max-width:520px;margin:0 auto;display:grid;gap:14px;text-align:left;
+  }
+  form.contact label{font-size:.85rem;font-weight:700;color:var(--navy);display:block;margin-bottom:6px;}
+  form.contact input,form.contact textarea{
+    width:100%;padding:12px 14px;border:1px solid var(--gray-200);border-radius:8px;font-size:.95rem;font-family:inherit;
+  }
+  form.contact button{
+    margin-top:6px;padding:14px;border:none;border-radius:999px;background:var(--accent);color:#fff;
+    font-weight:700;font-size:1rem;cursor:pointer;
+  }
+  form.contact button:hover{background:#186b4f;}
+  .form-note{font-size:.78rem;color:var(--gray-600);margin-top:4px;}
+
+  footer{background:var(--navy-dark);color:rgba(255,255,255,.6);padding:36px 0;font-size:.82rem;text-align:center;}
+  footer a{color:rgba(255,255,255,.8);}
+
+  @media(max-width:640px){
+    nav.site{display:none;}
+    section{padding:56px 0;}
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <div class="logo">MEO<span>ラボ</span></div>
+    <nav class="site">
+      <a href="#problem">こんなお悩み</a>
+      <a href="#features">サービス内容</a>
+      <a href="#pricing">料金</a>
+      <a href="#faq">よくある質問</a>
+    </nav>
+    <a href="#contact" class="cta-btn">無料相談を申し込む</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <span class="badge">初期費用0円プランあり・最短即日ヒアリング</span>
+    <h1>Googleマップの検索結果で<br><em>「近くのお店」の上位に</em>表示させる。</h1>
+    <p class="lead">
+      Googleビジネスプロフィールの最適化から口コミ対応、順位計測レポートまで。
+      来店・問い合わせにつながるMEO対策をワンストップで代行します。
+    </p>
+    <div class="actions">
+      <a href="#contact" class="cta-btn">無料相談・見積りを依頼する</a>
+      <a href="#features" class="btn-outline">サービス内容を見る</a>
+    </div>
+  </div>
+</section>
+
+<section id="problem">
+  <div class="wrap">
+    <h2 class="section-title">こんなお悩みはありませんか？</h2>
+    <p class="section-sub">Googleマップ経由の集客は、正しく運用しないと機会損失が積み重なります。</p>
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="icon">📍</div>
+        <h3>地図に店が出てこない</h3>
+        <p>「エリア名＋業種」で検索してもマップ上位3件（ローカルパック）に表示されず、来店機会を逃している。</p>
+      </div>
+      <div class="problem-card">
+        <div class="icon">💬</div>
+        <h3>口コミ対応が後回しに</h3>
+        <p>低評価の口コミに返信できず放置し、新規顧客の信頼を落としてしまっている。</p>
+      </div>
+      <div class="problem-card">
+        <div class="icon">🕒</div>
+        <h3>更新する時間がない</h3>
+        <p>本業が忙しく、GBPの投稿・写真更新・情報修正まで手が回らない。</p>
+      </div>
+      <div class="problem-card">
+        <div class="icon">📉</div>
+        <h3>効果が見えない</h3>
+        <p>これまで対策会社に依頼したが、順位やアクセスの変化がレポートされず不透明だった。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features" class="alt">
+  <div class="wrap">
+    <h2 class="section-title">サービス内容</h2>
+    <p class="section-sub">GBPの立ち上げから日々の運用、効果測定までを一貫してサポートします。</p>
+    <div class="feature-list">
+      <div class="feature">
+        <div class="num">1</div>
+        <h3>GBP基本情報の最適化</h3>
+        <p>店舗名・カテゴリ・営業時間・写真などを検索エンジンに評価されやすい形に整備します。</p>
+      </div>
+      <div class="feature">
+        <div class="num">2</div>
+        <h3>投稿・キャンペーン運用</h3>
+        <p>月次で最新情報やキャンペーンを投稿し、プロフィールの鮮度とエンゲージメントを維持します。</p>
+      </div>
+      <div class="feature">
+        <div class="num">3</div>
+        <h3>口コミ管理・返信代行</h3>
+        <p>高評価・低評価いずれにも適切な返信を行い、信頼度と評価スコアの維持向上を図ります。</p>
+      </div>
+      <div class="feature">
+        <div class="num">4</div>
+        <h3>順位計測・月次レポート</h3>
+        <p>主要キーワードでの掲載順位を定期計測し、推移がひと目でわかるレポートを提出します。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="flow">
+  <div class="wrap">
+    <h2 class="section-title">ご利用の流れ</h2>
+    <p class="section-sub">お申し込みから運用開始まで最短1週間程度です。</p>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="step-num"></div>
+        <div><h3>無料相談・ヒアリング</h3><p>現状のGBPと課題、目標をお伺いします。所要時間は30分程度です。</p></div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num"></div>
+        <div><h3>お見積り・ご契約</h3><p>店舗数・対策範囲に応じたプランをご提案し、ご納得の上でご契約いただきます。</p></div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num"></div>
+        <div><h3>GBPアクセス権の共有</h3><p>管理者権限をご提供いただき、初回の情報最適化を実施します。</p></div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num"></div>
+        <div><h3>運用開始・月次レポート</h3><p>投稿・口コミ対応・順位計測を継続し、毎月レポートで状況を共有します。</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing" class="alt">
+  <div class="wrap">
+    <h2 class="section-title">料金プラン</h2>
+    <p class="section-sub">店舗数・対策範囲に応じてプランをお選びいただけます（表示価格は税別）。</p>
+    <div class="pricing-grid">
+      <div class="plan">
+        <h3>ライト</h3>
+        <div class="price">￥15,000<small> / 月</small></div>
+        <div class="setup">初期費用 ￥20,000</div>
+        <ul>
+          <li>GBP基本情報最適化</li>
+          <li>月2件の投稿代行</li>
+          <li>口コミ返信（月5件まで）</li>
+          <li>順位レポート（隔月）</li>
+        </ul>
+        <a href="#contact" class="cta-btn" style="text-align:center;">相談する</a>
+      </div>
+      <div class="plan featured">
+        <h3>スタンダード</h3>
+        <div class="price">￥30,000<small> / 月</small></div>
+        <div class="setup">初期費用 ￥30,000</div>
+        <ul>
+          <li>GBP基本情報最適化</li>
+          <li>月4件の投稿代行</li>
+          <li>口コミ返信（月15件まで）</li>
+          <li>順位レポート（毎月）</li>
+          <li>写真追加（月1回）</li>
+        </ul>
+        <a href="#contact" class="cta-btn" style="text-align:center;">相談する</a>
+      </div>
+      <div class="plan">
+        <h3>プレミアム</h3>
+        <div class="price">￥50,000<small> / 月</small></div>
+        <div class="setup">初期費用 ￥50,000</div>
+        <ul>
+          <li>GBP基本情報最適化</li>
+          <li>月8件の投稿代行</li>
+          <li>口コミ返信（無制限）</li>
+          <li>順位レポート＋競合分析</li>
+          <li>専任担当による戦略提案</li>
+        </ul>
+        <a href="#contact" class="cta-btn" style="text-align:center;">相談する</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <h2 class="section-title">よくある質問</h2>
+    <div class="faq-item">
+      <h3>Q. 順位は必ず上がりますか？</h3>
+      <p>A. Googleのアルゴリズムや競合状況に左右されるため、順位を保証するものではありません。継続的な最適化により露出向上を目指します。</p>
+    </div>
+    <div class="faq-item">
+      <h3>Q. 最低契約期間はありますか？</h3>
+      <p>A. 効果測定に一定期間を要するため、最低3ヶ月からのご契約をお願いしています。</p>
+    </div>
+    <div class="faq-item">
+      <h3>Q. Googleビジネスプロフィールを持っていません。</h3>
+      <p>A. 新規開設からサポート可能です。オプションメニューにて代行いたします。</p>
+    </div>
+    <div class="faq-item">
+      <h3>Q. 複数店舗の一括対応は可能ですか？</h3>
+      <p>A. 可能です。2店舗目以降は割引プランをご用意しています。詳細はお問い合わせください。</p>
+    </div>
+  </div>
+</section>
+
+<section id="contact" class="cta-band">
+  <div class="wrap">
+    <h2>まずは無料相談から</h2>
+    <p>現状のGoogleマップ掲載状況を確認し、改善余地を無料でお伝えします。</p>
+    <form class="contact" action="mailto:【問い合わせ受信用メールアドレス】" method="post" enctype="text/plain">
+      <div>
+        <label for="name">お名前</label>
+        <input id="name" name="お名前" type="text" required>
+      </div>
+      <div>
+        <label for="store">店舗名／会社名</label>
+        <input id="store" name="店舗名" type="text" required>
+      </div>
+      <div>
+        <label for="email">メールアドレス</label>
+        <input id="email" name="メールアドレス" type="email" required>
+      </div>
+      <div>
+        <label for="message">ご相談内容</label>
+        <textarea id="message" name="ご相談内容" rows="4"></textarea>
+      </div>
+      <button type="submit">この内容で送信する</button>
+      <p class="form-note">
+        ※ 上記フォームは簡易的なmailto送信です。フォーム送信を安定させたい場合は
+        Googleフォームや無料のフォーム送信サービス（SSGform等）のaction URLに差し替えてご利用ください。
+      </p>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>【屋号／会社名】｜【住所】｜【電話番号】｜<a href="mailto:【メールアドレス】">【メールアドレス】</a></p>
+    <p>&copy; <span id="year"></span> 【屋号／会社名】</p>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+
+</body>
+</html>
