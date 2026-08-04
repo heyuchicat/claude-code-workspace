@@ -1,7 +1,17 @@
-# MEO対策サービス 運用開始チェックリスト（法人版）
+# デジタルマーケティングサービス 運用開始チェックリスト（法人版）
 
-既存の法人（会社HP・独自ドメイン・Googleアカウントあり）の一事業としてMEO対策サービスを開始するための
-チェックリストです。個人事業主向けの手続き（開業届・個人口座など）は不要なため、その分の項目は省いています。
+既存の法人（会社HP・独自ドメイン・Googleアカウントあり）の一事業として、以下5つのサービスラインを
+組み合わせて提供するためのチェックリストです。個人事業主向けの手続き（開業届・個人口座など）は不要なため、
+その分の項目は省いています。
+
+- MEO対策（Googleビジネスプロフィール運用）
+- Google広告（ディスプレイ／バナー広告）
+- Google広告（ローカル広告／Googleマップ スポンサー枠）
+- META広告（Facebook・Instagram）
+- ホームページ／LP制作
+
+クライアントごとにこれらを自由に組み合わせて契約する前提で、料金表・契約書・ヒアリングシート・
+顧客管理シートはすべて複数サービス対応の形にしてあります。
 
 > **前提の注意**
 > Claudeはこの環境から実際のGoogle Workspaceへのユーザー追加・DNS設定・有料ツールの契約などを
@@ -72,6 +82,15 @@ Google Workspace側に `meo@会社ドメイン` を追加する移行も検討�
 - `docs/templates/kuchikomi-henshin.md`: 口コミ返信のトーン・免責面での注意点のみ確認すれば十分。
 - `tools/toukou-calendar.xlsx`: 投稿文の作成自体はご自身で行い、このシートは複数店舗の予定管理・進捗管理にのみ使う。
 
+### 1-6. 広告運用の基盤（Google広告 MCC／META Business Manager）— 進行中
+- **Google広告のマネージャーアカウント（MCC）は作成済み: `691-934-0172`**。
+  クライアントの広告アカウントをリンクする具体的な手順は `docs/templates/google-ads-mcc-guide.md` を参照。
+  Local Services Ads（Google Guaranteed）は別サービスで、クライアント自身の資格・保険認証が必要な点に注意。
+- META（Facebook・Instagram）広告用のBusiness Managerは、`docs/templates/meta-ads-setup-guide.md` の手順で
+  無料で作成できます。未作成であれば早めに作成しておくと、META広告の案件が来たときにすぐ動けます。
+- いずれも**広告費用（media費用）はクライアント自身の広告アカウント・支払い方法で運用**する方針とし、
+  代理店（自社）は運用手数料のみを請求します（`docs/templates/ryoukinhyou.md` §6）。
+
 ---
 
 ## 2. 自作した「実際に使えるツール」（Excelファイル・数式入り）
@@ -83,7 +102,7 @@ LibreOfficeで再計算・検証済みで、数式エラーはありません。
 | ファイル | 代替する有料サービス | 内容 |
 |---|---|---|
 | `tools/junni-keisoku-sheet.xlsx` | GMBrank、MEOチェキ等（月額3,000〜20,000円） | 順位記録台帳＋店舗別自動集計（AVERAGEIFS）＋推移グラフ |
-| `tools/crm-kanri-sheet.xlsx` | HubSpot、kintone等（無料枠〜月額数千円） | 顧客一覧＋契約終了日の自動アラート（残り日数で色分け）＋MRR自動集計 |
+| `tools/crm-kanri-sheet.xlsx` | HubSpot、kintone等（無料枠〜月額数千円） | 顧客一覧（MEO/Google広告2種/META広告/HP制作の契約有無を列管理）＋契約終了アラート＋サービス別契約件数・MRR自動集計 |
 | `tools/seikyuusho-generator.xlsx` | freee、マネーフォワード等（月額1,000円台〜） | 見積書・請求書の自動計算（数量×単価、消費税、合計） |
 | `tools/toukou-calendar.xlsx` | Storefront、ChatKastle等（月額数千〜数万円） | 複数店舗のGBP投稿予定・進捗管理＋期限超過の自動アラート |
 
@@ -105,6 +124,8 @@ LibreOfficeで再計算・検証済みで、数式エラーはありません。
 | 紙の契約書に貼る収入印紙 | 電子契約ではなく紙で契約書を締結し、かつ「継続的取引の基本契約書」に該当する場合 | 印紙税は国への納税であり、他社サービスではないが自作で代替できない実費（1通あたり4,000円が目安、契約内容により異なるため税理士に要確認） |
 
 > 逆に言えば、Google Workspaceの追加ライセンス以外は、当面「自作ツール＋既存の会社インフラ」だけで運用を開始できます。
+> なお、Google広告・META広告のアカウント開設・MCC/Business Manager作成自体は無料です。広告費用（media費用）は
+> 発生しますが、それはクライアント自身が負担するものであり、代理店として新たに契約すべき「他社サービス」ではありません。
 
 ---
 
@@ -117,11 +138,13 @@ LibreOfficeで再計算・検証済みで、数式エラーはありません。
 | `tools/crm-kanri-sheet.xlsx` | 顧客管理シート（契約終了アラート・MRR集計付き） |
 | `tools/seikyuusho-generator.xlsx` | 見積書・請求書 自動計算シート |
 | `tools/toukou-calendar.xlsx` | GBP投稿管理カレンダー |
-| `docs/templates/google-workspace-account-setup.md` | MEO業務用Google Workspaceアカウントの追加手順 |
-| `docs/templates/hearing-sheet.md` | 新規見込み客向けヒアリングシート |
+| `docs/templates/google-workspace-account-setup.md` | 運用担当アカウント（`rexel.portal@gmail.com`）の設定・セキュリティガイド |
+| `docs/templates/google-ads-mcc-guide.md` | Google広告MCC（`691-934-0172`）の運用・クライアントリンク手順 |
+| `docs/templates/meta-ads-setup-guide.md` | META Business Managerの作成・クライアント連携手順 |
+| `docs/templates/hearing-sheet.md` | 新規見込み客向けヒアリングシート（5サービス共通・複数選択対応） |
 | `docs/templates/mitsumorisho.md` | 見積書・請求書テンプレート（法人名義・紙運用向け） |
-| `docs/templates/keiyaku-gyomuitaku.md` | MEO対策業務委託契約書のひな形（法人名義） |
-| `docs/templates/ryoukinhyou.md` | 料金表サンプル（3プラン構成） |
+| `docs/templates/keiyaku-gyomuitaku.md` | デジタルマーケティング業務委託契約書のひな形（法人名義・別紙で業務範囲を指定） |
+| `docs/templates/ryoukinhyou.md` | サービスメニュー・料金表サンプル（5ライン組み合わせ対応） |
 | `docs/templates/junni-keisoku-sheet.md` | 順位計測の運用ルール説明（`tools/`のxlsxとセットで参照） |
 | `docs/templates/kuchikomi-henshin.md` | 口コミ返信テンプレート |
 | `docs/meo-tools-comparison.md` | 有料ツール比較表と導入タイミングの目安 |
