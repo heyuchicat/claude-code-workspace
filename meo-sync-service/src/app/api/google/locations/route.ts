@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchGoogleBusinessLocations } from "@/lib/mock-google-business";
+import { fetchGoogleBusinessLocations } from "@/lib/data-source";
 
 export async function GET() {
   const locations = await fetchGoogleBusinessLocations();

@@ -1,67 +1,46 @@
-import { GoogleBusinessPost, LinkMapping } from "./types";
+import { prisma } from "./db";
+import { LinkMapping } from "./types";
 
-// プロトタイプ用のインメモリストア。
-// Next.js の dev サーバーはモジュールをホットリロードするため、
-// globalThis に状態を退避してリロードをまたいでデータを保持する。
-// 本番ではDB(Postgres等)に置き換える。
-
-type StoreState = {
-  googleBusinessPosts: GoogleBusinessPost[];
-  linkMappings: LinkMapping[];
-  postSeq: number;
-};
-
-const globalForStore = globalThis as unknown as {
-  __meoStore?: StoreState;
-};
-
-function getState(): StoreState {
-  if (!globalForStore.__meoStore) {
-    globalForStore.__meoStore = {
-      googleBusinessPosts: [],
-      linkMappings: [],
-      postSeq: 0,
-    };
-  }
-  return globalForStore.__meoStore;
-}
+// Instagram投稿 <-> Googleビジネスプロフィール投稿 の紐づけ状態を
+// SQLite(Prisma)に永続化する。GoogleBusinessPost自体はGoogle側が原本を持つため
+// ローカルには保存せず、必要な時にAPIから読み直す(mock-google-business.ts / google-business.ts 参照)。
 
 export const store = {
-  nextGoogleBusinessPostSeq(): number {
-    const state = getState();
-    state.postSeq += 1;
-    return state.postSeq;
+  async addLinkMapping(mapping: LinkMapping): Promise<void> {
+    await prisma.linkMapping.create({
+      data: {
+        instagramPostId: mapping.instagramPostId,
+        googleBusinessPostId: mapping.googleBusinessPostId,
+        locationId: mapping.locationId,
+        linkedAt: new Date(mapping.linkedAt),
+      },
+    });
   },
 
-  addGoogleBusinessPost(post: GoogleBusinessPost) {
-    getState().googleBusinessPosts.push(post);
+  async listLinkMappings(): Promise<LinkMapping[]> {
+    const rows = await prisma.linkMapping.findMany({
+      orderBy: { linkedAt: "desc" },
+    });
+    return rows.map((row) => ({
+      instagramPostId: row.instagramPostId,
+      googleBusinessPostId: row.googleBusinessPostId,
+      locationId: row.locationId,
+      linkedAt: row.linkedAt.toISOString(),
+    }));
   },
 
-  listGoogleBusinessPosts(): GoogleBusinessPost[] {
-    return [...getState().googleBusinessPosts].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-  },
-
-  addLinkMapping(mapping: LinkMapping) {
-    getState().linkMappings.push(mapping);
-  },
-
-  listLinkMappings(): LinkMapping[] {
-    return [...getState().linkMappings];
-  },
-
-  findLinkByInstagramPostId(instagramPostId: string): LinkMapping | undefined {
-    return getState().linkMappings.find(
-      (m) => m.instagramPostId === instagramPostId
-    );
-  },
-
-  reset() {
-    globalForStore.__meoStore = {
-      googleBusinessPosts: [],
-      linkMappings: [],
-      postSeq: 0,
+  async findLinkByInstagramPostId(
+    instagramPostId: string
+  ): Promise<LinkMapping | undefined> {
+    const row = await prisma.linkMapping.findUnique({
+      where: { instagramPostId },
+    });
+    if (!row) return undefined;
+    return {
+      instagramPostId: row.instagramPostId,
+      googleBusinessPostId: row.googleBusinessPostId,
+      locationId: row.locationId,
+      linkedAt: row.linkedAt.toISOString(),
     };
   },
 };

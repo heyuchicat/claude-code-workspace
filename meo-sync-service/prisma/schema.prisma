@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Instagram / Google それぞれ1アカウント分のOAuth接続情報を保持する。
+// (MVPは店舗1店を運営する単一テナント想定のため provider ごとに1レコード)
+model Connection {
+  id                 String   @id @default(cuid())
+  provider           String   @unique // "instagram" | "google"
+  accessToken        String
+  refreshToken       String?
+  expiresAt          DateTime?
+  externalAccountId  String // IGビジネスアカウントID / Googleアカウント名
+  externalLabel      String // 表示用(@username や店舗名)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// Instagram投稿 <-> Googleビジネスプロフィール投稿の紐づけ記録
+model LinkMapping {
+  id                   String   @id @default(cuid())
+  instagramPostId      String   @unique
+  googleBusinessPostId String
+  locationId           String
+  linkedAt             DateTime @default(now())
+}

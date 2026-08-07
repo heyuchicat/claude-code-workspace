@@ -1,9 +1,8 @@
 import { GoogleBusinessLocation, GoogleBusinessPost } from "./types";
-import { store } from "./store";
 
 // Google Business Profile API (旧 Google マイビジネス) のダミークライアント。
-// 本番では https://mybusiness.googleapis.com/v4/accounts/{accountId}/locations/{locationId}/localPosts
-// を呼び出す実装に差し替える。(要: Google Cloud プロジェクト + OAuth2 + Business Profile APIs 有効化)
+// 本番では google-business-client.ts の実装(要: OAuth連携)に差し替わる。
+// 作成された投稿はサーバープロセス内のメモリにのみ保持する(デモ用途のため)。
 
 const MOCK_LOCATIONS: GoogleBusinessLocation[] = [
   {
@@ -13,6 +12,24 @@ const MOCK_LOCATIONS: GoogleBusinessLocation[] = [
     mapsUrl: "https://maps.google.com/?cid=mock001",
   },
 ];
+
+const globalForMock = globalThis as unknown as {
+  __meoMockGooglePosts?: GoogleBusinessPost[];
+  __meoMockGooglePostSeq?: number;
+};
+
+function getMockPosts(): GoogleBusinessPost[] {
+  if (!globalForMock.__meoMockGooglePosts) {
+    globalForMock.__meoMockGooglePosts = [];
+    globalForMock.__meoMockGooglePostSeq = 0;
+  }
+  return globalForMock.__meoMockGooglePosts;
+}
+
+function nextMockPostSeq(): number {
+  globalForMock.__meoMockGooglePostSeq = (globalForMock.__meoMockGooglePostSeq ?? 0) + 1;
+  return globalForMock.__meoMockGooglePostSeq;
+}
 
 async function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -32,7 +49,7 @@ export type CreateGoogleBusinessPostInput = {
   sourceInstagramPostId: string;
 };
 
-// 実APIでは POST localPosts に相当。ここではstoreに保存するだけのダミー実装。
+// 実APIでは POST localPosts に相当。ここではメモリに保存するだけのダミー実装。
 export async function createGoogleBusinessPost(
   input: CreateGoogleBusinessPostInput
 ): Promise<GoogleBusinessPost> {
@@ -44,7 +61,7 @@ export async function createGoogleBusinessPost(
   }
 
   const post: GoogleBusinessPost = {
-    id: `gbp_post_${store.nextGoogleBusinessPostSeq()}`,
+    id: `gbp_post_${nextMockPostSeq()}`,
     locationId: input.locationId,
     summary: input.summary,
     mediaUrl: input.mediaUrl,
@@ -53,7 +70,7 @@ export async function createGoogleBusinessPost(
     sourceInstagramPostId: input.sourceInstagramPostId,
   };
 
-  store.addGoogleBusinessPost(post);
+  getMockPosts().push(post);
   return post;
 }
 
@@ -61,5 +78,7 @@ export async function fetchGoogleBusinessPosts(): Promise<
   GoogleBusinessPost[]
 > {
   await delay(100);
-  return store.listGoogleBusinessPosts();
+  return [...getMockPosts()].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 }

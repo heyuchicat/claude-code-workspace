@@ -1,5 +1,8 @@
-import { fetchInstagramPostById, fetchInstagramPosts } from "./mock-instagram";
-import { createGoogleBusinessPost } from "./mock-google-business";
+import {
+  fetchInstagramPostById,
+  fetchInstagramPosts,
+  createGoogleBusinessPost,
+} from "./data-source";
 import { store } from "./store";
 import { LinkMapping } from "./types";
 
@@ -25,7 +28,7 @@ export async function linkInstagramPostToGoogle(
   instagramPostId: string,
   locationId: string
 ): Promise<LinkMapping> {
-  const existing = store.findLinkByInstagramPostId(instagramPostId);
+  const existing = await store.findLinkByInstagramPostId(instagramPostId);
   if (existing) {
     throw new AlreadyLinkedError(instagramPostId);
   }
@@ -48,7 +51,7 @@ export async function linkInstagramPostToGoogle(
     locationId,
     linkedAt: new Date().toISOString(),
   };
-  store.addLinkMapping(mapping);
+  await store.addLinkMapping(mapping);
 
   return mapping;
 }
@@ -60,7 +63,7 @@ export async function syncAllUnlinkedPosts(locationId: string) {
     [];
 
   for (const post of posts) {
-    if (store.findLinkByInstagramPostId(post.id)) continue;
+    if (await store.findLinkByInstagramPostId(post.id)) continue;
     try {
       await linkInstagramPostToGoogle(post.id, locationId);
       results.push({ instagramPostId: post.id, ok: true });

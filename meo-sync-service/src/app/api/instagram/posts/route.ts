@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { fetchInstagramPosts } from "@/lib/mock-instagram";
+import { fetchInstagramPosts } from "@/lib/data-source";
 import { store } from "@/lib/store";
 
 export async function GET() {
   const posts = await fetchInstagramPosts();
-  const links = store.listLinkMappings();
+  const links = await store.listLinkMappings();
 
   const withStatus = posts.map((post) => ({
     ...post,

@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./page.module.css";
 import {
   GoogleBusinessLocation,
@@ -12,7 +13,16 @@ import {
 
 type PostWithLink = InstagramPost & { link: LinkMapping | null };
 
-export default function Home() {
+type ConnectionStatus = {
+  instagram: { connected: true; label: string } | { connected: false };
+  google: { connected: true; label: string } | { connected: false };
+};
+
+function Dashboard() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [status, setStatus] = useState<ConnectionStatus | null>(null);
   const [account, setAccount] = useState<InstagramAccount | null>(null);
   const [locations, setLocations] = useState<GoogleBusinessLocation[]>([]);
   const [posts, setPosts] = useState<PostWithLink[]>([]);
@@ -20,18 +30,26 @@ export default function Home() {
   const [locationId, setLocationId] = useState<string>("");
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [syncingAll, setSyncingAll] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    searchParams.get("error")
+  );
+  const [notice] = useState<string | null>(
+    searchParams.get("connected") ? "連携が完了しました" : null
+  );
   const [loading, setLoading] = useState(true);
+  const [disconnecting, setDisconnecting] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
-    const [accountRes, locationsRes, postsRes, googlePostsRes] =
+    const [statusRes, accountRes, locationsRes, postsRes, googlePostsRes] =
       await Promise.all([
+        fetch("/api/auth/status").then((r) => r.json()),
         fetch("/api/instagram/account").then((r) => r.json()),
         fetch("/api/google/locations").then((r) => r.json()),
         fetch("/api/instagram/posts").then((r) => r.json()),
         fetch("/api/google/posts").then((r) => r.json()),
       ]);
 
+    setStatus(statusRes);
     setAccount(accountRes.account);
     setLocations(locationsRes.locations);
     setPosts(postsRes.posts);
@@ -86,8 +104,24 @@ export default function Home() {
     }
   }
 
+  async function handleDisconnect(provider: "instagram" | "google") {
+    setDisconnecting(provider);
+    try {
+      await fetch(`/api/auth/${provider}/disconnect`, { method: "POST" });
+      await loadAll();
+    } finally {
+      setDisconnecting(null);
+    }
+  }
+
+  async function handleLogout() {
+    await fetch("/api/auth/login", { method: "DELETE" });
+    router.push("/login");
+  }
+
   const linkedCount = posts.filter((p) => p.link).length;
   const unlinkedCount = posts.length - linkedCount;
+  const isDemoMode = !status?.instagram.connected || !status?.google.connected;
 
   if (loading) {
     return (
@@ -100,11 +134,27 @@ export default function Home() {
   return (
     <main className={styles.main}>
       <header className={styles.header}>
-        <h1>MEO Sync</h1>
-        <p className={styles.subtitle}>
-          Instagram投稿をGoogleビジネスプロフィールへ自動連携するMEOツール(MVPプロトタイプ)
-        </p>
+        <div className={styles.headerRow}>
+          <div>
+            <h1>MEO Sync</h1>
+            <p className={styles.subtitle}>
+              Instagram投稿をGoogleビジネスプロフィールへ自動連携するMEOツール
+            </p>
+          </div>
+          <button className={styles.logoutButton} onClick={handleLogout}>
+            ログアウト
+          </button>
+        </div>
+        {isDemoMode && (
+          <p className={styles.demoBadge}>
+            デモモード:
+            未接続のサービスはダミーデータを表示しています。下の「連携する」ボタンから実際のアカウントに接続できます。
+          </p>
+        )}
       </header>
+
+      {notice && <p className={styles.notice}>{notice}</p>}
+      {error && <p className={styles.error}>{error}</p>}
 
       <section className={styles.accountsRow}>
         <div className={styles.accountCard}>
@@ -112,7 +162,22 @@ export default function Home() {
           <span className={styles.accountName}>
             @{account?.username ?? "-"}
           </span>
-          <span className={styles.badgeConnected}>連携済み</span>
+          {status?.instagram.connected ? (
+            <div className={styles.connectionActions}>
+              <span className={styles.badgeConnected}>連携済み</span>
+              <button
+                className={styles.linkButton}
+                onClick={() => handleDisconnect("instagram")}
+                disabled={disconnecting === "instagram"}
+              >
+                連携を解除
+              </button>
+            </div>
+          ) : (
+            <a className={styles.connectButton} href="/api/auth/instagram/start">
+              Instagramを連携する
+            </a>
+          )}
         </div>
         <div className={styles.arrow}>→</div>
         <div className={styles.accountCard}>
@@ -120,7 +185,22 @@ export default function Home() {
           <span className={styles.accountName}>
             {locations.find((l) => l.id === locationId)?.name ?? "-"}
           </span>
-          <span className={styles.badgeConnected}>連携済み</span>
+          {status?.google.connected ? (
+            <div className={styles.connectionActions}>
+              <span className={styles.badgeConnected}>連携済み</span>
+              <button
+                className={styles.linkButton}
+                onClick={() => handleDisconnect("google")}
+                disabled={disconnecting === "google"}
+              >
+                連携を解除
+              </button>
+            </div>
+          ) : (
+            <a className={styles.connectButton} href="/api/auth/google/start">
+              Googleを連携する
+            </a>
+          )}
         </div>
       </section>
 
@@ -148,8 +228,6 @@ export default function Home() {
             : `未連携の投稿をすべて同期 (${unlinkedCount}件)`}
         </button>
       </section>
-
-      {error && <p className={styles.error}>{error}</p>}
 
       <section className={styles.statsRow}>
         <div className={styles.statCard}>
@@ -230,5 +308,13 @@ export default function Home() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <Dashboard />
+    </Suspense>
   );
 }
