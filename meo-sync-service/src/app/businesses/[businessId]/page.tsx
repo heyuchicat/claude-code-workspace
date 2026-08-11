@@ -11,15 +11,25 @@ import ScheduledPostsTab from "./_components/ScheduledPostsTab";
 import QATab from "./_components/QATab";
 import RankCheckTab from "./_components/RankCheckTab";
 import ProductsTab from "./_components/ProductsTab";
+import ReviewRequestTab from "./_components/ReviewRequestTab";
+import CompetitorsTab from "./_components/CompetitorsTab";
+import ReportTab from "./_components/ReportTab";
+import NotificationSettingsTab from "./_components/NotificationSettingsTab";
+import ExternalListingsTab from "./_components/ExternalListingsTab";
 
 const TABS = [
   { id: "sync", label: "投稿連携" },
   { id: "reviews", label: "クチコミ" },
+  { id: "reviewRequest", label: "口コミ依頼" },
   { id: "insights", label: "インサイト" },
+  { id: "competitors", label: "競合比較" },
   { id: "scheduled", label: "予約投稿" },
   { id: "qa", label: "Q&A" },
   { id: "products", label: "商品・サービス" },
   { id: "rank", label: "順位チェック" },
+  { id: "report", label: "レポート" },
+  { id: "notifications", label: "通知設定" },
+  { id: "externalListings", label: "外部リンク" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -95,6 +105,11 @@ function Dashboard({ businessId }: { businessId: string }) {
       {tab === "qa" && <QATab businessId={businessId} />}
       {tab === "products" && <ProductsTab businessId={businessId} />}
       {tab === "rank" && <RankCheckTab businessId={businessId} />}
+      {tab === "reviewRequest" && <ReviewRequestTab businessId={businessId} />}
+      {tab === "competitors" && <CompetitorsTab businessId={businessId} />}
+      {tab === "report" && <ReportTab businessId={businessId} />}
+      {tab === "notifications" && <NotificationSettingsTab businessId={businessId} />}
+      {tab === "externalListings" && <ExternalListingsTab businessId={businessId} />}
     </main>
   );
 }

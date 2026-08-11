@@ -10,10 +10,20 @@ Instagram連携・複数店舗管理・クチコミ返信・インサイト分�
 - **Instagram → Google 投稿連携**: Instagram投稿をワンクリック(または一括)でGoogleビジネスプロフィールへ投稿
 - **クチコミ管理**: Googleクチコミの一覧表示・返信
 - **公式インサイト分析**: 閲覧数・検索キーワード・電話タップ数・ルート検索数などをグラフ表示(Google公式API)
-- **予約投稿**: 日時を指定してGoogleビジネスプロフィールへ自動公開(cron連携)
+- **予約投稿**: 日時を指定してGoogleビジネスプロフィールへ自動公開(cron連携)。画像はURL貼り付けの他、
+  ファイルアップロードにも対応
 - **Q&A管理**: Googleに寄せられた質問への回答
-- **商品・サービスカタログ**: Googleビジネスプロフィール上に商品名・価格・写真を掲載し、検索結果・マップ上で目立たせる(Google Adsのような有料広告ではなく、プロフィール上の公式な商品掲載機能)
-- **検索順位チェック(実験的)**: Googleマップでの検索順位を自動チェック。**⚠ Googleの利用規約に抵触しうる機能です。下記の注意事項を必ず読んでから使ってください。**
+- **商品・サービスカタログ**: Googleビジネスプロフィール上に商品名・価格・写真を掲載し、検索結果・マップ上で目立たせる(Google Adsのような有料広告ではなく、プロフィール上の公式な商品掲載機能)。写真もファイルアップロード対応
+- **検索順位チェック(実験的)**: Googleマップでの検索順位を自動チェック。複数キーワードを登録して
+  cronで定期実行し、順位の推移をグラフで確認できます。**⚠ Googleの利用規約に抵触しうる機能です。下記の注意事項を必ず読んでから使ってください。**
+- **口コミ依頼リンク・QRコード**: Googleクチコミ投稿ページへの直接リンクとQRコードを生成。
+  店頭掲示やレシートへの印刷用
+- **月次レポート自動送付**: インサイト・クチコミ・投稿実績をまとめたPDFレポートを生成し、
+  手動ダウンロードまたはメールで自動送付(cron連携)
+- **通知・アラート**: 低評価クチコミ受信時・検索順位低下時にメール/Slackへ自動通知(cron連携)
+- **競合比較**: Google Places APIで競合店を検索・登録し、評価(★・件数)を自店舗と比較表示
+- **外部プラットフォームの参照リンク**: 食べログ・ホットペッパー等、他媒体の掲載ページURLを
+  まとめて登録・一覧表示(自動連携ではなく手動登録)
 - 管理者パスワードによるログイン保護
 - SQLiteでの永続化(連携トークン・同期履歴・予約投稿・チェック履歴)
 
@@ -49,7 +59,8 @@ Instagram / Google 連携用の環境変数(`INSTAGRAM_APP_ID` など)は空の�
 2. 初回のみ: パスワードを設定(セットアップ画面)
 3. 「店舗を追加」で管理したい店舗を作成
 4. 作成した店舗をクリックしてダッシュボードに入る
-5. タブ(投稿連携・クチコミ・インサイト・予約投稿・Q&A・商品・サービス・順位チェック)を切り替えて操作
+5. タブ(投稿連携・クチコミ・口コミ依頼・インサイト・競合比較・予約投稿・Q&A・商品・サービス・
+   順位チェック・レポート・通知設定・外部リンク)を切り替えて操作
 6. 実際のInstagram/Googleアカウントと連携したい場合は、各ダッシュボード上部の「連携する」ボタンから(下記「実際のInstagram/Googleアカウントと連携する」を参照)
 
 ## 実際のInstagram/Googleアカウントと連携する(本番利用)
@@ -75,6 +86,21 @@ Instagram / Google 連携用の環境変数(`INSTAGRAM_APP_ID` など)は空の�
    [公式ドキュメント](https://developers.google.com/my-business/content/overview)で
    最新のエンドポイントをご確認ください。`src/lib/google-*.ts` に実装箇所があります。
 
+### 競合比較機能(Google Places API)
+
+競合比較タブはOAuth連携とは別に、APIキー方式のGoogle Places API (New) を使用します。
+Business Profile APIsのような利用申請・承認は不要です。
+
+1. Google Cloud Consoleで対象プロジェクトの「Places API (New)」を有効化(要課金設定)
+2. APIキーを発行し、`.env` の `GOOGLE_MAPS_API_KEY` に設定
+
+### 月次レポートメール・アラート通知(SMTP/Slack)
+
+各店舗の「通知設定」タブで通知先メールアドレス・Slack Webhook URLを設定できます。
+メール送信を使う場合は、`.env` に `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` /
+`SMTP_PASS` / `SMTP_FROM` を設定してください(未設定のままメール通知先を設定すると、
+送信時にエラーが返ります)。Slack通知はWebhook URLの設定のみで、追加の環境変数は不要です。
+
 ### 代理店として複数の顧客のGoogleビジネスプロフィールを管理する場合
 
 顧客のGoogleアカウントのパスワードを教えてもらう必要はありません。Googleビジネスプロフィールには、
@@ -90,16 +116,34 @@ Instagram / Google 連携用の環境変数(`INSTAGRAM_APP_ID` など)は空の�
 4. もしあなたのGoogleアカウントが複数の顧客のビジネスプロフィールにアクセスできる場合、
    連携時に「どの顧客のアカウントをこの店舗に紐づけるか」を選ぶ画面が自動的に表示されます
 
-### 予約投稿の自動公開(cron設定)
+### 自動実行される機能(cron設定)
 
-予約投稿は自動では公開されません。「設定」画面(店舗一覧の右上「設定」リンク)に
-実行すべきコマンドと秘密鍵が表示されるので、それをコピーして外部cron(タスクスケジューラ、
-システムcron、Vercel Cronなど)から定期的に(例: 5分おき)実行してください。表示例:
+以下の機能は自動では動作せず、外部cron(タスクスケジューラ、システムcron、Vercel Cronなど)から
+定期的に実行する必要があります。秘密鍵は「設定」画面(店舗一覧の右上「設定」リンク)で確認できます。
+
+| 用途 | エンドポイント | 推奨頻度 |
+|---|---|---|
+| 予約投稿の自動公開 | `/api/cron/publish-scheduled-posts` | 5分おき |
+| 定期チェック登録キーワードの順位チェック | `/api/cron/check-tracked-keywords` | 1日1回 |
+| 低評価クチコミ・順位低下のアラート通知 | `/api/cron/check-alerts` | 1〜数時間おき |
+| 月次レポートのメール自動送付(`reportEmail`設定店舗のみ) | `/api/cron/send-monthly-reports` | 月1回 |
+
+実行例(いずれも同じ秘密鍵を使用):
 
 ```bash
 curl -X POST http://localhost:3000/api/cron/publish-scheduled-posts \
   -H "Authorization: Bearer <設定画面に表示される秘密鍵>"
 ```
+
+### 画像アップロードについて
+
+予約投稿・商品/サービス登録では、画像URLの貼り付けの他に直接ファイルアップロードもできます。
+アップロードされた画像は `public/uploads/<店舗ID>/` 配下に保存され、アプリ自身のホスト名で配信されます。
+
+**重要:** Googleへ実際に投稿する際は、Google側のサーバーが画像URLを取得しに来ます。
+`localhost` で動かしている間はGoogle側から到達できないため、アップロード画像を使ったGoogleへの
+実投稿は、アプリを外部から到達可能なURLでデプロイした後にのみ動作します(デモモード・
+URL貼り付けでの動作確認はlocalhostのままでも可能)。
 
 ### 注意事項
 
@@ -140,8 +184,10 @@ src/
     settings/                    設定画面(cron秘密鍵確認・パスワード変更)
     businesses/                  店舗一覧画面
     businesses/[businessId]/     店舗ごとのダッシュボード(タブ切り替えUI)
-      _components/                SyncTab, ReviewsTab, InsightsTab, ScheduledPostsTab,
-                                   QATab, ProductsTab, RankCheckTab
+      _components/                SyncTab, ReviewsTab, ReviewRequestTab, InsightsTab,
+                                   CompetitorsTab, ScheduledPostsTab, QATab, ProductsTab,
+                                   RankCheckTab, ReportTab, NotificationSettingsTab,
+                                   ExternalListingsTab
       select-google-account/      Google連携時、アクセス可能な顧客が複数ある場合の選択画面
     api/
       setup/                      初回セットアップ(GET状態確認 / POST作成)
@@ -149,7 +195,7 @@ src/
       auth/login/                 管理者ログイン/ログアウト
       auth/instagram/start,callback/  Instagram OAuth(店舗IDはstateパラメータで受け渡し)
       auth/google/start,callback/     Google OAuth(同上)
-      businesses/                 店舗のCRUD
+      businesses/                 店舗のCRUD(PATCHで通知先メール・Slack Webhook設定)
       businesses/[businessId]/
         auth/status, auth/*/disconnect  接続状態・接続解除
         google-account-selection/  Google連携時の複数アカウント選択(一覧取得・確定)
@@ -157,12 +203,22 @@ src/
         google/locations,posts    Googleロケーション・投稿取得
         sync/, sync/all/          投稿の連携実行
         reviews/, reviews/reply/  クチコミ取得・返信
+        review-link/              口コミ依頼リンク・QRコード生成
         insights/                 インサイト取得
+        competitors/, competitors/search,compare/  競合店の検索・登録・比較
         qa/, qa/answer/           Q&A取得・回答
         products/, products/[id]/  商品・サービスの登録・一覧・削除
         scheduled-posts/          予約投稿のCRUD
         rank-checks/              順位チェックの実行・履歴取得
+        tracked-keywords/         定期チェック登録キーワードのCRUD
+        report/                   月次レポートPDFの手動ダウンロード
+        test-notification/        通知設定のテスト送信
+        external-listings/        外部プラットフォーム参照リンクのCRUD
+        uploads/                  画像アップロード(予約投稿・商品写真用)
       cron/publish-scheduled-posts/  予約投稿の自動公開(cron秘密鍵で保護)
+      cron/check-tracked-keywords/   登録キーワードの順位チェック(同上)
+      cron/check-alerts/             低評価クチコミ・順位低下のアラート通知(同上)
+      cron/send-monthly-reports/     月次レポートのメール自動送付(同上)
   lib/
     types.ts                    ドメイン型定義
     admin-settings.ts             管理者パスワード・各種秘密鍵のDBアクセス
@@ -173,6 +229,9 @@ src/
     review-store.ts / qa-store.ts  返信・回答の監査ログ
     scheduled-posts-store.ts     予約投稿のDBアクセス
     rank-checks-store.ts         順位チェック履歴のDBアクセス
+    tracked-keywords-store.ts    定期チェック登録キーワードのDBアクセス
+    competitors-store.ts         競合店登録のDBアクセス
+    external-listings-store.ts   外部プラットフォーム参照リンクのDBアクセス
     mock-*.ts                   各機能のダミークライアント(デモモード用)
     instagram-client.ts          Instagram実APIクライアント
     google-business-client.ts    Google実APIクライアント(OAuth・投稿)
@@ -180,14 +239,22 @@ src/
     google-insights-client.ts    Google Performance API実クライアント
     google-qa-client.ts          Google Q&A実APIクライアント
     google-products-client.ts    Google商品・サービス(Products)実APIクライアント
+    google-places-client.ts      Google Places API(競合比較用、APIキー方式)
     rank-checker.ts              検索順位チェック(Playwright, 実験的)
+    browser.ts                   Playwright Chromium起動の共通処理
+    review-link.ts               口コミ依頼リンク・QRコード生成
+    report-generator.ts          月次レポートHTML/PDF生成
+    mailer.ts                    SMTPメール送信
+    notify.ts                    店舗宛の通知送信(メール/Slack)ファサード
+    alerts.ts                    低評価クチコミ・順位低下の検知ロジック
     data-source.ts               mock/実APIを接続状態に応じて切り替えるファサード
     sync-service.ts             「紐づけ」処理のコアロジック
     session.ts / proxy.ts        管理者ログインのセッション管理・保護
   generated/prisma/             Prisma Client(自動生成。gitignore対象)
 prisma/schema.prisma           DBスキーマ(AdminSettings, Business, Connection,
                                 PendingGoogleConnection, LinkMapping, ScheduledPost,
-                                QAEntry, ReviewReply, RankCheck)
+                                QAEntry, ReviewReply, RankCheck, TrackedKeyword,
+                                Competitor, ExternalListing, AlertedReview)
 ```
 
 ## デプロイ時の注意
@@ -195,6 +262,9 @@ prisma/schema.prisma           DBスキーマ(AdminSettings, Business, Connectio
 - SQLiteはファイルベースのため、Vercelなど**書き込み可能な永続ディスクを持たない環境では動作しません**。
   Fly.io / Render / 自前サーバーなど、永続ボリュームを使える環境にデプロイするか、
   `prisma/schema.prisma` の datasource を Postgres 等に変更してください。
+- アップロード画像も同様に `public/uploads/` へファイル保存するため、SQLiteと同じ永続ボリュームが
+  必要です。またGoogleへの実投稿にアップロード画像を使う場合は、Google側のサーバーが取得できる
+  よう外部から到達可能なURLでデプロイしている必要があります(上記「画像アップロードについて」参照)。
 - 検索順位チェック機能を使う場合は、実行環境に Chromium ブラウザが必要です(上記参照)。
   不要であれば `RankCheckTab` の呼び出しやAPIルートを無効化しても他機能には影響しません。
 - 管理者パスワードはセットアップ画面で設定したもの、`SESSION_SECRET`/`CRON_SECRET`相当は

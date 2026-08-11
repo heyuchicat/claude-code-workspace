@@ -21,6 +21,8 @@ export default function ScheduledPostsTab({ businessId }: { businessId: string }
   const [summary, setSummary] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,6 +64,29 @@ export default function ScheduledPostsTab({ businessId }: { businessId: string }
     }
   }
 
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch(`/api/businesses/${businessId}/uploads`, {
+        method: "POST",
+        body,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "アップロードに失敗しました");
+      setMediaUrl(data.url);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function handleCancel(id: string) {
     await fetch(`/api/businesses/${businessId}/scheduled-posts/${id}`, {
       method: "DELETE",
@@ -92,11 +117,26 @@ export default function ScheduledPostsTab({ businessId }: { businessId: string }
         />
         <input
           className={styles.input}
-          placeholder="画像URL(https://...)"
+          placeholder="画像URL(https://... または下からアップロード)"
           value={mediaUrl}
           onChange={(e) => setMediaUrl(e.target.value)}
           required
         />
+        <label className={styles.secondaryButton} style={{ display: "inline-block", cursor: "pointer" }}>
+          {uploading ? "アップロード中..." : "画像をアップロード"}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleFileChange}
+            disabled={uploading}
+            style={{ display: "none" }}
+          />
+        </label>
+        {uploadError && <p className={styles.error}>{uploadError}</p>}
+        {mediaUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={mediaUrl} alt="プレビュー" className={styles.googlePostThumb} />
+        )}
         <input
           className={styles.input}
           type="datetime-local"

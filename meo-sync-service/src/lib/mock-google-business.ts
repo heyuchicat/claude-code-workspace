@@ -10,6 +10,7 @@ const MOCK_LOCATIONS: GoogleBusinessLocation[] = [
     name: "サンプルカフェ 東京本店",
     address: "東京都渋谷区神南1-2-3",
     mapsUrl: "https://maps.google.com/?cid=mock001",
+    placeId: "ChIJMockPlaceId00000000000",
   },
 ];
 

@@ -1,4 +1,4 @@
-import { chromium } from "playwright-core";
+import { launchChromium } from "./browser";
 
 // 【実験的機能・要注意】
 // Googleマップの検索結果ページをヘッドレスブラウザで開き、掲載順位を目視同様の方法で
@@ -40,7 +40,7 @@ async function checkRankOnce(
   keyword: string,
   businessNameMatch: string
 ): Promise<number | null> {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchChromium();
   try {
     const page = await browser.newPage({
       viewport: { width: 1280, height: 900 },

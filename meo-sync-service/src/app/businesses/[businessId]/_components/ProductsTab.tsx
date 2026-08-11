@@ -18,6 +18,8 @@ export default function ProductsTab({ businessId }: { businessId: string }) {
   const [description, setDescription] = useState("");
   const [priceYen, setPriceYen] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const loadLocations = useCallback(async () => {
     const res = await fetch(`/api/businesses/${businessId}/google/locations`);
@@ -79,6 +81,29 @@ export default function ProductsTab({ businessId }: { businessId: string }) {
     }
   }
 
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch(`/api/businesses/${businessId}/uploads`, {
+        method: "POST",
+        body,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "アップロードに失敗しました");
+      setPhotoUrl(data.url);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function handleDelete(productId: string) {
     setDeletingId(productId);
     try {
@@ -135,11 +160,26 @@ export default function ProductsTab({ businessId }: { businessId: string }) {
         />
         <input
           className={styles.input}
-          placeholder="写真URL(https://...)"
+          placeholder="写真URL(https://... または下からアップロード)"
           value={photoUrl}
           onChange={(e) => setPhotoUrl(e.target.value)}
           required
         />
+        <label className={styles.secondaryButton} style={{ display: "inline-block", cursor: "pointer" }}>
+          {uploading ? "アップロード中..." : "画像をアップロード"}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleFileChange}
+            disabled={uploading}
+            style={{ display: "none" }}
+          />
+        </label>
+        {uploadError && <p className={styles.error}>{uploadError}</p>}
+        {photoUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photoUrl} alt="プレビュー" className={styles.postImage} />
+        )}
         {error && <p className={styles.error}>{error}</p>}
         <button className={styles.primaryButton} disabled={creating}>
           {creating ? "登録中..." : "登録する"}

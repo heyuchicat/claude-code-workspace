@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { deleteBusiness, getBusiness } from "@/lib/businesses";
+import { deleteBusiness, getBusiness, updateBusinessSettings } from "@/lib/businesses";
 
 export async function GET(
   _request: Request,
@@ -10,6 +10,25 @@ export async function GET(
   if (!business) {
     return NextResponse.json({ error: "店舗が見つかりません" }, { status: 404 });
   }
+  return NextResponse.json({ business });
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ businessId: string }> }
+) {
+  const { businessId } = await params;
+  const body = await request.json().catch(() => null);
+
+  const input: Record<string, string | null> = {};
+  for (const key of ["reportEmail", "alertEmail", "slackWebhookUrl"] as const) {
+    if (key in (body ?? {})) {
+      const value = body[key];
+      input[key] = typeof value === "string" && value.trim() !== "" ? value.trim() : null;
+    }
+  }
+
+  const business = await updateBusinessSettings(businessId, input);
   return NextResponse.json({ business });
 }
 

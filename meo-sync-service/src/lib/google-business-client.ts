@@ -224,12 +224,13 @@ export async function fetchRealGoogleBusinessLocations(
     name: string; // "locations/12345"
     title?: string;
     storefrontAddress?: { addressLines?: string[]; locality?: string };
-    metadata?: { mapsUri?: string };
+    metadata?: { mapsUri?: string; placeId?: string };
   };
 
   return ((data.locations ?? []) as ApiLocation[]).map((loc) => ({
     id: loc.name,
     name: loc.title ?? loc.name,
+    placeId: loc.metadata?.placeId ?? null,
     address: [
       ...(loc.storefrontAddress?.addressLines ?? []),
       loc.storefrontAddress?.locality,

@@ -25,6 +25,7 @@ export type GoogleBusinessLocation = {
   name: string;
   address: string;
   mapsUrl: string;
+  placeId: string | null; // クチコミ依頼リンクの生成に使用
 };
 
 export type GoogleBusinessPostStatus = "LIVE" | "REJECTED" | "PENDING";

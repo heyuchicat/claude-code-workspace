@@ -19,15 +19,22 @@ model AdminSettings {
 
 // 店舗(テナント)。代理店が複数店舗をまとめて管理できるようにするための単位。
 model Business {
-  id             String          @id @default(cuid())
-  name           String
-  createdAt      DateTime        @default(now())
-  connections    Connection[]
-  linkMappings   LinkMapping[]
-  scheduledPosts ScheduledPost[]
-  qaEntries      QAEntry[]
-  reviewReplies  ReviewReply[]
-  rankChecks     RankCheck[]
+  id               String            @id @default(cuid())
+  name             String
+  createdAt        DateTime          @default(now())
+  reportEmail      String? // 月次レポートの自動送付先(未設定なら送付しない)
+  alertEmail       String? // アラート通知のメール送付先(未設定ならメール通知しない)
+  slackWebhookUrl  String? // アラート通知用Slack Incoming Webhook URL(未設定なら送らない)
+  connections      Connection[]
+  linkMappings     LinkMapping[]
+  scheduledPosts   ScheduledPost[]
+  qaEntries        QAEntry[]
+  reviewReplies    ReviewReply[]
+  rankChecks       RankCheck[]
+  trackedKeywords  TrackedKeyword[]
+  competitors      Competitor[]
+  externalListings ExternalListing[]
+  alertedReviews   AlertedReview[]
 }
 
 // Instagram / Google それぞれのOAuth接続情報を店舗ごとに保持する。
@@ -110,6 +117,50 @@ model RankCheck {
   keyword    String
   rank       Int? // nullは圏外(上位20件に見つからず)
   checkedAt  DateTime @default(now())
+}
+
+// 定期的に検索順位をチェックするキーワードの登録(実験的機能。README参照)
+model TrackedKeyword {
+  id                String   @id @default(cuid())
+  businessId        String
+  business          Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  locationId        String
+  keyword           String
+  businessNameMatch String // 検索結果内でどの表記に一致させるか
+  createdAt         DateTime @default(now())
+}
+
+// 競合比較のために手動登録した競合店(Google Place ID)
+model Competitor {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  placeId    String
+  label      String // 表示名(登録時にPlaces APIから取得した店舗名)
+  createdAt  DateTime @default(now())
+
+  @@unique([businessId, placeId])
+}
+
+// 食べログ・ホットペッパー等、公式APIが無い外部プラットフォームへの参照リンク(手動登録・表示のみ)
+model ExternalListing {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  platform   String // 表示名(例: "食べログ", "ホットペッパー")
+  url        String
+  createdAt  DateTime @default(now())
+}
+
+// 低評価クチコミの通知済み管理(同じレビューで重複通知しないため)
+model AlertedReview {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  reviewId   String
+  alertedAt  DateTime @default(now())
+
+  @@unique([businessId, reviewId])
 }
 
 // Google OAuth完了直後、アクセス可能なGoogleビジネスアカウントが複数ある場合に

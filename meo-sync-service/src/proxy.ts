@@ -8,13 +8,23 @@ const PUBLIC_PATHS = [
   "/api/auth/login",
   "/setup",
   "/api/setup",
-  "/api/cron/publish-scheduled-posts", // 独自にCRON_SECRETで認証するため対象外にする
+  // 以下は独自にCRON_SECRETで認証するため対象外にする
+  "/api/cron/publish-scheduled-posts",
+  "/api/cron/send-monthly-reports",
+  "/api/cron/check-alerts",
+  "/api/cron/check-tracked-keywords",
 ];
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (PUBLIC_PATHS.some((p) => pathname === p)) {
+    return NextResponse.next();
+  }
+
+  // アップロード画像はGoogle側のサーバーが投稿時にログインなしで取得できる必要があるため公開する。
+  // ファイル名はUUIDのため第三者が推測してアクセスすることは実質不可能。
+  if (pathname.startsWith("/uploads/")) {
     return NextResponse.next();
   }
 
