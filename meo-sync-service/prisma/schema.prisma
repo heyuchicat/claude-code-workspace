@@ -7,6 +7,16 @@ datasource db {
   provider = "sqlite"
 }
 
+// アプリ全体の管理者設定(シングルトン。1行のみ存在する)。
+// 初回アクセス時のセットアップ画面でパスワードを設定すると作成される。
+model AdminSettings {
+  id            String   @id @default("singleton")
+  passwordHash  String // scrypt("<salt>:<hash>")
+  sessionSecret String // セッションcookie署名用
+  cronSecret    String // /api/cron/* 認証用
+  createdAt     DateTime @default(now())
+}
+
 // 店舗(テナント)。代理店が複数店舗をまとめて管理できるようにするための単位。
 model Business {
   id             String          @id @default(cuid())

@@ -1,18 +1,11 @@
 // 管理者ログイン用の署名付きセッショントークン(HMAC-SHA256)。
-// ライブラリなしで軽量に実装するための自前実装。SESSION_SECRETで署名する。
+// ライブラリなしで軽量に実装するための自前実装。DB(AdminSettings)に保存された
+// sessionSecretで署名する(.envの手編集を不要にするため)。
+
+import { getAdminSettings } from "./admin-settings";
 
 const SESSION_COOKIE_NAME = "meo_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7日
-
-function getSecret(): string {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret) {
-    throw new Error(
-      "SESSION_SECRET が設定されていません。.env に設定してください。"
-    );
-  }
-  return secret;
-}
 
 async function hmac(data: string, secret: string): Promise<string> {
   const key = await crypto.subtle.importKey(
@@ -27,9 +20,13 @@ async function hmac(data: string, secret: string): Promise<string> {
 }
 
 export async function createSessionToken(): Promise<string> {
+  const settings = await getAdminSettings();
+  if (!settings) {
+    throw new Error("初回セットアップが完了していません");
+  }
   const expiresAt = Date.now() + SESSION_TTL_MS;
   const payload = `authenticated.${expiresAt}`;
-  const signature = await hmac(payload, getSecret());
+  const signature = await hmac(payload, settings.sessionSecret);
   return `${payload}.${signature}`;
 }
 
@@ -43,7 +40,10 @@ export async function verifySessionToken(token: string | undefined): Promise<boo
   const expiresAt = Number(expiresAtStr);
   if (!Number.isFinite(expiresAt) || Date.now() > expiresAt) return false;
 
-  const expectedSignature = await hmac(`${marker}.${expiresAtStr}`, getSecret());
+  const settings = await getAdminSettings();
+  if (!settings) return false;
+
+  const expectedSignature = await hmac(`${marker}.${expiresAtStr}`, settings.sessionSecret);
   return signature === expectedSignature;
 }
 

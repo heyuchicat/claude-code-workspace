@@ -1,24 +1,30 @@
 import { NextResponse } from "next/server";
+import { createAdminSettings, isSetUp } from "@/lib/admin-settings";
 import { SESSION_COOKIE_NAME, createSessionToken } from "@/lib/session";
-import { isSetUp, verifyPassword } from "@/lib/admin-settings";
+
+export async function GET() {
+  return NextResponse.json({ setUp: await isSetUp() });
+}
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const password = body?.password as string | undefined;
 
-  if (!(await isSetUp())) {
+  if (!password || password.length < 8) {
     return NextResponse.json(
-      { error: "初回セットアップが完了していません" },
-      { status: 428 }
+      { error: "パスワードは8文字以上で設定してください" },
+      { status: 400 }
     );
   }
 
-  if (!password || !(await verifyPassword(password))) {
+  if (await isSetUp()) {
     return NextResponse.json(
-      { error: "パスワードが正しくありません" },
-      { status: 401 }
+      { error: "すでにセットアップ済みです" },
+      { status: 409 }
     );
   }
+
+  await createAdminSettings(password);
 
   const token = await createSessionToken();
   const res = NextResponse.json({ ok: true });
@@ -29,11 +35,5 @@ export async function POST(request: Request) {
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
-  return res;
-}
-
-export async function DELETE() {
-  const res = NextResponse.json({ ok: true });
-  res.cookies.delete(SESSION_COOKIE_NAME);
   return res;
 }

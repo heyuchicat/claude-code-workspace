@@ -20,47 +20,37 @@ Instagram連携・複数店舗管理・クチコミ返信・インサイト分�
 Instagram / Google のどちらかが未接続の店舗では、そのサービスは**ダミーデータのデモモード**で動作します。
 APIキーなしでもすぐに触って動作確認できます。
 
-## セットアップ
+## セットアップ(自分のPCで動かす)
 
-### 1. 依存関係のインストール
+このアプリは自分のPC上でずっと動かして使う、個人〜少人数運用を想定したセルフホスト型です。
+`.env` の手編集は基本的に不要で、以下の2コマンドだけで起動できます。
 
 ```bash
 npm install
-```
-
-(`postinstall` で Prisma Client が自動生成されます)
-
-### 2. 環境変数の設定
-
-```bash
-cp .env.example .env
-```
-
-`.env` を開き、最低限以下は必ず設定してください。
-
-| 変数 | 内容 |
-|---|---|
-| `ADMIN_PASSWORD` | ダッシュボードにログインするためのパスワード |
-| `SESSION_SECRET` | セッションcookie署名用のランダム文字列(`openssl rand -hex 32` などで生成) |
-| `CRON_SECRET` | 予約投稿の自動公開エンドポイントを保護する秘密鍵 |
-
-Instagram / Google 連携用の変数(`INSTAGRAM_APP_ID` など)は空のままでも起動できます。
-その場合は該当サービスがデモモードになります。
-
-### 3. データベースのセットアップ
-
-```bash
-npx prisma migrate deploy
-```
-
-### 4. 起動
-
-```bash
 npm run dev
 ```
 
-`http://localhost:3000` を開き、`ADMIN_PASSWORD` でログインすると店舗一覧が表示されます。
-店舗を作成して選択すると、店舗ごとのダッシュボード(投稿連携・クチコミ・インサイト・予約投稿・Q&A・順位チェック)に入れます。
+(`npm run dev` は内部でDBの初期化(`prisma migrate deploy`)も自動実行します)
+
+`http://localhost:3000` をブラウザで開くと、**初回だけ**セットアップ画面が表示されます。
+ここでログイン用のパスワードを設定してください(このパソコン専用の管理者パスワードです)。
+設定が終わるとそのままログインした状態になり、店舗一覧画面に入れます。
+
+以降は `npm run dev` で起動し、同じパスワードでログインするだけで使えます。
+Instagram / Google 連携用の環境変数(`INSTAGRAM_APP_ID` など)は空のままでも起動でき、
+その場合は該当サービスがデモモード(ダミーデータ)になります。
+
+パソコンを閉じている間はアプリも停止します。外出先やスマホから常時使いたくなったら、
+どこかのサーバーへのデプロイが必要です(検討する際はお知らせください)。
+
+### 使い方の流れ
+
+1. `npm run dev` を実行し、ブラウザで `http://localhost:3000` を開く
+2. 初回のみ: パスワードを設定(セットアップ画面)
+3. 「店舗を追加」で管理したい店舗を作成
+4. 作成した店舗をクリックしてダッシュボードに入る
+5. タブ(投稿連携・クチコミ・インサイト・予約投稿・Q&A・商品・サービス・順位チェック)を切り替えて操作
+6. 実際のInstagram/Googleアカウントと連携したい場合は、各ダッシュボード上部の「連携する」ボタンから(下記「実際のInstagram/Googleアカウントと連携する」を参照)
 
 ## 実際のInstagram/Googleアカウントと連携する(本番利用)
 
@@ -87,12 +77,13 @@ npm run dev
 
 ### 予約投稿の自動公開(cron設定)
 
-予約投稿は自動では公開されません。以下のエンドポイントを外部cron(Vercel Cron、システムcron、
-GitHub Actionsのscheduleなど)から定期的に(例: 5分おき)呼び出してください。
+予約投稿は自動では公開されません。「設定」画面(店舗一覧の右上「設定」リンク)に
+実行すべきコマンドと秘密鍵が表示されるので、それをコピーして外部cron(タスクスケジューラ、
+システムcron、Vercel Cronなど)から定期的に(例: 5分おき)実行してください。表示例:
 
 ```bash
-curl -X POST https://<あなたのドメイン>/api/cron/publish-scheduled-posts \
-  -H "Authorization: Bearer $CRON_SECRET"
+curl -X POST http://localhost:3000/api/cron/publish-scheduled-posts \
+  -H "Authorization: Bearer <設定画面に表示される秘密鍵>"
 ```
 
 ### 注意事項
@@ -129,12 +120,16 @@ Playwrightは `playwright-core` を使用しており、実行環境に **Chromi
 src/
   app/
     page.tsx                     ルート("/businesses"へリダイレクト)
+    setup/                       初回セットアップ画面(管理者パスワード設定)
     login/                       管理者ログイン画面
+    settings/                    設定画面(cron秘密鍵確認・パスワード変更)
     businesses/                  店舗一覧画面
     businesses/[businessId]/     店舗ごとのダッシュボード(タブ切り替えUI)
-      _components/                SyncTab, ReviewsTab, InsightsTab,
-                                   ScheduledPostsTab, QATab, RankCheckTab
+      _components/                SyncTab, ReviewsTab, InsightsTab, ScheduledPostsTab,
+                                   QATab, ProductsTab, RankCheckTab
     api/
+      setup/                      初回セットアップ(GET状態確認 / POST作成)
+      settings/                   cron秘密鍵の確認・再生成、パスワード変更
       auth/login/                 管理者ログイン/ログアウト
       auth/instagram/start,callback/  Instagram OAuth(店舗IDはstateパラメータで受け渡し)
       auth/google/start,callback/     Google OAuth(同上)
@@ -150,9 +145,10 @@ src/
         products/, products/[id]/  商品・サービスの登録・一覧・削除
         scheduled-posts/          予約投稿のCRUD
         rank-checks/              順位チェックの実行・履歴取得
-      cron/publish-scheduled-posts/  予約投稿の自動公開(CRON_SECRET保護)
+      cron/publish-scheduled-posts/  予約投稿の自動公開(cron秘密鍵で保護)
   lib/
     types.ts                    ドメイン型定義
+    admin-settings.ts             管理者パスワード・各種秘密鍵のDBアクセス
     businesses.ts                店舗(テナント)のDBアクセス
     connections.ts                OAuth接続情報(トークン)のDBアクセス(店舗別)
     store.ts                     投稿連携履歴(LinkMapping)のDBアクセス
@@ -171,8 +167,8 @@ src/
     sync-service.ts             「紐づけ」処理のコアロジック
     session.ts / proxy.ts        管理者ログインのセッション管理・保護
   generated/prisma/             Prisma Client(自動生成。gitignore対象)
-prisma/schema.prisma           DBスキーマ(Business, Connection, LinkMapping,
-                                ScheduledPost, QAEntry, ReviewReply, RankCheck)
+prisma/schema.prisma           DBスキーマ(AdminSettings, Business, Connection,
+                                LinkMapping, ScheduledPost, QAEntry, ReviewReply, RankCheck)
 ```
 
 ## デプロイ時の注意
@@ -182,8 +178,11 @@ prisma/schema.prisma           DBスキーマ(Business, Connection, LinkMapping,
   `prisma/schema.prisma` の datasource を Postgres 等に変更してください。
 - 検索順位チェック機能を使う場合は、実行環境に Chromium ブラウザが必要です(上記参照)。
   不要であれば `RankCheckTab` の呼び出しやAPIルートを無効化しても他機能には影響しません。
-- `ADMIN_PASSWORD` / `SESSION_SECRET` / `CRON_SECRET` / 各APIシークレットは
-  本番では必ず推測困難な値に変更してください。
+- 管理者パスワードはセットアップ画面で設定したもの、`SESSION_SECRET`/`CRON_SECRET`相当は
+  初回セットアップ時にサーバー側で自動生成されDBに保存されます(手動設定は不要)。
+  外部に公開する場合は、推測困難なパスワードを設定してください。
+- Instagram/Google連携用のクライアントシークレットなど、`.env`に設定するAPIキー類は
+  本番では必ず推測困難な値・正しい発行元のものを使用してください。
 
 ## スクリプト
 

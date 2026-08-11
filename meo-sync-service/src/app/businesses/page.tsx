@@ -74,9 +74,14 @@ export default function BusinessesPage() {
           <h1>MEO Sync</h1>
           <p className={styles.subtitle}>管理する店舗を選択してください</p>
         </div>
-        <button className={styles.logoutButton} onClick={handleLogout}>
-          ログアウト
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link href="/settings" className={styles.logoutButton}>
+            設定
+          </Link>
+          <button className={styles.logoutButton} onClick={handleLogout}>
+            ログアウト
+          </button>
+        </div>
       </div>
 
       {error && <p className={styles.error}>{error}</p>}
