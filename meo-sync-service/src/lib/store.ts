@@ -2,13 +2,13 @@ import { prisma } from "./db";
 import { LinkMapping } from "./types";
 
 // Instagram投稿 <-> Googleビジネスプロフィール投稿 の紐づけ状態を
-// SQLite(Prisma)に永続化する。GoogleBusinessPost自体はGoogle側が原本を持つため
-// ローカルには保存せず、必要な時にAPIから読み直す(mock-google-business.ts / google-business.ts 参照)。
+// 店舗(businessId)ごとにSQLite(Prisma)に永続化する。
 
 export const store = {
-  async addLinkMapping(mapping: LinkMapping): Promise<void> {
+  async addLinkMapping(businessId: string, mapping: LinkMapping): Promise<void> {
     await prisma.linkMapping.create({
       data: {
+        businessId,
         instagramPostId: mapping.instagramPostId,
         googleBusinessPostId: mapping.googleBusinessPostId,
         locationId: mapping.locationId,
@@ -17,8 +17,9 @@ export const store = {
     });
   },
 
-  async listLinkMappings(): Promise<LinkMapping[]> {
+  async listLinkMappings(businessId: string): Promise<LinkMapping[]> {
     const rows = await prisma.linkMapping.findMany({
+      where: { businessId },
       orderBy: { linkedAt: "desc" },
     });
     return rows.map((row) => ({
@@ -30,10 +31,11 @@ export const store = {
   },
 
   async findLinkByInstagramPostId(
+    businessId: string,
     instagramPostId: string
   ): Promise<LinkMapping | undefined> {
     const row = await prisma.linkMapping.findUnique({
-      where: { instagramPostId },
+      where: { businessId_instagramPostId: { businessId, instagramPostId } },
     });
     if (!row) return undefined;
     return {

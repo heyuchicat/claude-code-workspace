@@ -25,20 +25,21 @@ export class AlreadyLinkedError extends Error {
 }
 
 export async function linkInstagramPostToGoogle(
+  businessId: string,
   instagramPostId: string,
   locationId: string
 ): Promise<LinkMapping> {
-  const existing = await store.findLinkByInstagramPostId(instagramPostId);
+  const existing = await store.findLinkByInstagramPostId(businessId, instagramPostId);
   if (existing) {
     throw new AlreadyLinkedError(instagramPostId);
   }
 
-  const igPost = await fetchInstagramPostById(instagramPostId);
+  const igPost = await fetchInstagramPostById(businessId, instagramPostId);
   if (!igPost) {
     throw new Error(`Instagram post not found: ${instagramPostId}`);
   }
 
-  const googlePost = await createGoogleBusinessPost({
+  const googlePost = await createGoogleBusinessPost(businessId, {
     locationId,
     summary: buildSummary(igPost.caption),
     mediaUrl: igPost.mediaUrl,
@@ -51,21 +52,21 @@ export async function linkInstagramPostToGoogle(
     locationId,
     linkedAt: new Date().toISOString(),
   };
-  await store.addLinkMapping(mapping);
+  await store.addLinkMapping(businessId, mapping);
 
   return mapping;
 }
 
 // 未連携のInstagram投稿をすべて指定ロケーションへ一括同期する。
-export async function syncAllUnlinkedPosts(locationId: string) {
-  const posts = await fetchInstagramPosts();
+export async function syncAllUnlinkedPosts(businessId: string, locationId: string) {
+  const posts = await fetchInstagramPosts(businessId);
   const results: { instagramPostId: string; ok: boolean; error?: string }[] =
     [];
 
   for (const post of posts) {
-    if (await store.findLinkByInstagramPostId(post.id)) continue;
+    if (await store.findLinkByInstagramPostId(businessId, post.id)) continue;
     try {
-      await linkInstagramPostToGoogle(post.id, locationId);
+      await linkInstagramPostToGoogle(businessId, post.id, locationId);
       results.push({ instagramPostId: post.id, ok: true });
     } catch (err) {
       results.push({

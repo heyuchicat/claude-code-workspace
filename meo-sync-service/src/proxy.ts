@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/session";
 
-const PUBLIC_PATHS = ["/login", "/api/auth/login"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/api/auth/login",
+  "/api/cron/publish-scheduled-posts", // 独自にCRON_SECRETで認証するため対象外にする
+];
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

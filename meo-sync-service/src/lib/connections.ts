@@ -3,6 +3,7 @@ import { prisma } from "./db";
 export type Provider = "instagram" | "google";
 
 export type ConnectionRecord = {
+  businessId: string;
   provider: Provider;
   accessToken: string;
   refreshToken: string | null;
@@ -12,11 +13,15 @@ export type ConnectionRecord = {
 };
 
 export async function getConnection(
+  businessId: string,
   provider: Provider
 ): Promise<ConnectionRecord | null> {
-  const row = await prisma.connection.findUnique({ where: { provider } });
+  const row = await prisma.connection.findUnique({
+    where: { businessId_provider: { businessId, provider } },
+  });
   if (!row) return null;
   return {
+    businessId: row.businessId,
     provider: row.provider as Provider,
     accessToken: row.accessToken,
     refreshToken: row.refreshToken,
@@ -28,8 +33,11 @@ export async function getConnection(
 
 export async function upsertConnection(record: ConnectionRecord): Promise<void> {
   await prisma.connection.upsert({
-    where: { provider: record.provider },
+    where: {
+      businessId_provider: { businessId: record.businessId, provider: record.provider },
+    },
     create: {
+      businessId: record.businessId,
       provider: record.provider,
       accessToken: record.accessToken,
       refreshToken: record.refreshToken,
@@ -48,16 +56,20 @@ export async function upsertConnection(record: ConnectionRecord): Promise<void> 
 }
 
 export async function updateAccessToken(
+  businessId: string,
   provider: Provider,
   accessToken: string,
   expiresAt: Date | null
 ): Promise<void> {
   await prisma.connection.update({
-    where: { provider },
+    where: { businessId_provider: { businessId, provider } },
     data: { accessToken, expiresAt },
   });
 }
 
-export async function deleteConnection(provider: Provider): Promise<void> {
-  await prisma.connection.deleteMany({ where: { provider } });
+export async function deleteConnection(
+  businessId: string,
+  provider: Provider
+): Promise<void> {
+  await prisma.connection.deleteMany({ where: { businessId, provider } });
 }

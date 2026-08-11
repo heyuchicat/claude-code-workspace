@@ -4,7 +4,14 @@ import { buildInstagramAuthorizeUrl } from "@/lib/instagram-client";
 const STATE_COOKIE = "meo_ig_oauth_state";
 
 export async function GET(request: Request) {
-  const state = crypto.randomUUID();
+  const businessId = new URL(request.url).searchParams.get("businessId");
+  if (!businessId) {
+    return NextResponse.json({ error: "businessId は必須です" }, { status: 400 });
+  }
+
+  // stateにbusinessIdを埋め込み、コールバック側でどの店舗の連携かを判定する。
+  const nonce = crypto.randomUUID();
+  const state = `${businessId}.${nonce}`;
 
   try {
     const url = buildInstagramAuthorizeUrl(state);
@@ -20,7 +27,7 @@ export async function GET(request: Request) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.redirect(
-      new URL(`/?error=${encodeURIComponent(message)}`, request.url)
+      new URL(`/businesses/${businessId}?error=${encodeURIComponent(message)}`, request.url)
     );
   }
 }

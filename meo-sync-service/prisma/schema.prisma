@@ -7,25 +7,97 @@ datasource db {
   provider = "sqlite"
 }
 
-// Instagram / Google それぞれ1アカウント分のOAuth接続情報を保持する。
-// (MVPは店舗1店を運営する単一テナント想定のため provider ごとに1レコード)
+// 店舗(テナント)。代理店が複数店舗をまとめて管理できるようにするための単位。
+model Business {
+  id             String          @id @default(cuid())
+  name           String
+  createdAt      DateTime        @default(now())
+  connections    Connection[]
+  linkMappings   LinkMapping[]
+  scheduledPosts ScheduledPost[]
+  qaEntries      QAEntry[]
+  reviewReplies  ReviewReply[]
+  rankChecks     RankCheck[]
+}
+
+// Instagram / Google それぞれのOAuth接続情報を店舗ごとに保持する。
 model Connection {
-  id                 String   @id @default(cuid())
-  provider           String   @unique // "instagram" | "google"
-  accessToken        String
-  refreshToken       String?
-  expiresAt          DateTime?
-  externalAccountId  String // IGビジネスアカウントID / Googleアカウント名
-  externalLabel      String // 表示用(@username や店舗名)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                String    @id @default(cuid())
+  businessId        String
+  business          Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  provider          String // "instagram" | "google"
+  accessToken       String
+  refreshToken      String?
+  expiresAt         DateTime?
+  externalAccountId String // IGビジネスアカウントID / Googleアカウント名
+  externalLabel     String // 表示用(@username や店舗名)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([businessId, provider])
 }
 
 // Instagram投稿 <-> Googleビジネスプロフィール投稿の紐づけ記録
 model LinkMapping {
   id                   String   @id @default(cuid())
-  instagramPostId      String   @unique
+  businessId           String
+  business             Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  instagramPostId      String
   googleBusinessPostId String
   locationId           String
   linkedAt             DateTime @default(now())
+
+  @@unique([businessId, instagramPostId])
+}
+
+// Googleビジネスプロフィールへの予約投稿
+model ScheduledPost {
+  id           String    @id @default(cuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  locationId   String
+  summary      String
+  mediaUrl     String
+  scheduledAt  DateTime
+  status       String    @default("PENDING") // PENDING | PUBLISHED | FAILED
+  errorMessage String?
+  publishedAt  DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+// Googleビジネスプロフィールへの質問(Q&A)と回答
+model QAEntry {
+  id                 String    @id @default(cuid())
+  businessId         String
+  business           Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  locationId         String
+  externalQuestionId String // 実APIの質問リソースID / デモ用ダミーID
+  question           String
+  answer             String?
+  answeredAt         DateTime?
+  createdAt          DateTime  @default(now())
+}
+
+// クチコミへの返信ログ(返信済みかどうかの管理に使用)
+model ReviewReply {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  locationId String
+  reviewId   String // Googleのレビューリソース名 / デモ用ダミーID
+  replyText  String
+  repliedAt  DateTime @default(now())
+
+  @@unique([businessId, reviewId])
+}
+
+// 検索順位チェックの履歴(実験的機能。README参照)
+model RankCheck {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  locationId String
+  keyword    String
+  rank       Int? // nullは圏外(上位20件に見つからず)
+  checkedAt  DateTime @default(now())
 }

@@ -72,7 +72,10 @@ async function exchangeForLongLivedToken(shortLivedToken: string): Promise<{
 }
 
 // OAuthコールバックで呼び出す: 認可コード -> 長期アクセストークンを取得しDBへ保存する。
-export async function completeInstagramOAuth(code: string): Promise<void> {
+export async function completeInstagramOAuth(
+  businessId: string,
+  code: string
+): Promise<void> {
   const { accessToken: shortLived, userId } =
     await exchangeCodeForShortLivedToken(code);
   const { accessToken, expiresInSeconds } =
@@ -81,6 +84,7 @@ export async function completeInstagramOAuth(code: string): Promise<void> {
   const profile = await fetchProfileWithToken(accessToken);
 
   await upsertConnection({
+    businessId,
     provider: "instagram",
     accessToken,
     refreshToken: null,
@@ -90,8 +94,8 @@ export async function completeInstagramOAuth(code: string): Promise<void> {
   });
 }
 
-async function refreshLongLivedTokenIfNeeded(): Promise<string> {
-  const connection = await getConnection("instagram");
+async function refreshLongLivedTokenIfNeeded(businessId: string): Promise<string> {
+  const connection = await getConnection(businessId, "instagram");
   if (!connection) throw new Error("Instagramが接続されていません");
 
   const willExpireSoon =
@@ -110,7 +114,7 @@ async function refreshLongLivedTokenIfNeeded(): Promise<string> {
   }
   const data = await res.json();
   const newExpiresAt = new Date(Date.now() + data.expires_in * 1000);
-  await updateAccessToken("instagram", data.access_token, newExpiresAt);
+  await updateAccessToken(businessId, "instagram", data.access_token, newExpiresAt);
   return data.access_token;
 }
 
@@ -127,8 +131,10 @@ async function fetchProfileWithToken(
   return res.json();
 }
 
-export async function fetchRealInstagramAccount(): Promise<InstagramAccount> {
-  const accessToken = await refreshLongLivedTokenIfNeeded();
+export async function fetchRealInstagramAccount(
+  businessId: string
+): Promise<InstagramAccount> {
+  const accessToken = await refreshLongLivedTokenIfNeeded(businessId);
   const profile = await fetchProfileWithToken(accessToken);
   return {
     id: profile.id,
@@ -164,8 +170,10 @@ function toInstagramPost(media: InstagramMediaResponse): InstagramPost {
   };
 }
 
-export async function fetchRealInstagramPosts(): Promise<InstagramPost[]> {
-  const accessToken = await refreshLongLivedTokenIfNeeded();
+export async function fetchRealInstagramPosts(
+  businessId: string
+): Promise<InstagramPost[]> {
+  const accessToken = await refreshLongLivedTokenIfNeeded(businessId);
   const url = new URL(`${IG_GRAPH_BASE}/me/media`);
   url.searchParams.set("fields", MEDIA_FIELDS);
   url.searchParams.set("access_token", accessToken);
@@ -179,9 +187,10 @@ export async function fetchRealInstagramPosts(): Promise<InstagramPost[]> {
 }
 
 export async function fetchRealInstagramPostById(
+  businessId: string,
   id: string
 ): Promise<InstagramPost | undefined> {
-  const accessToken = await refreshLongLivedTokenIfNeeded();
+  const accessToken = await refreshLongLivedTokenIfNeeded(businessId);
   const url = new URL(`${IG_GRAPH_BASE}/${id}`);
   url.searchParams.set("fields", MEDIA_FIELDS);
   url.searchParams.set("access_token", accessToken);

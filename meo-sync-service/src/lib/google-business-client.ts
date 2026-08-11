@@ -19,7 +19,7 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const ACCOUNT_MGMT_BASE = "https://mybusinessaccountmanagement.googleapis.com/v1";
 const BUSINESS_INFO_BASE = "https://mybusinessbusinessinformation.googleapis.com/v1";
 const LEGACY_MYBUSINESS_BASE = "https://mybusiness.googleapis.com/v4";
-const GOOGLE_SCOPE = "https://www.googleapis.com/auth/business.manage";
+export const GOOGLE_SCOPE = "https://www.googleapis.com/auth/business.manage";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -58,7 +58,10 @@ async function exchangeCodeForTokens(code: string) {
   }>;
 }
 
-export async function completeGoogleOAuth(code: string): Promise<void> {
+export async function completeGoogleOAuth(
+  businessId: string,
+  code: string
+): Promise<void> {
   const tokens = await exchangeCodeForTokens(code);
   if (!tokens.refresh_token) {
     throw new Error(
@@ -79,6 +82,7 @@ export async function completeGoogleOAuth(code: string): Promise<void> {
   }
 
   await upsertConnection({
+    businessId,
     provider: "google",
     accessToken: tokens.access_token,
     refreshToken: tokens.refresh_token,
@@ -88,11 +92,12 @@ export async function completeGoogleOAuth(code: string): Promise<void> {
   });
 }
 
-async function getValidAccessToken(): Promise<{
+// レビュー・インサイト等、他のGoogle API呼び出しからも使う共通のトークン取得。
+export async function getValidGoogleAccessToken(businessId: string): Promise<{
   accessToken: string;
   accountResourceName: string;
 }> {
-  const connection = await getConnection("google");
+  const connection = await getConnection(businessId, "google");
   if (!connection) throw new Error("Googleが接続されていません");
 
   const expired =
@@ -123,7 +128,7 @@ async function getValidAccessToken(): Promise<{
   }
   const data = await res.json();
   const newExpiresAt = new Date(Date.now() + data.expires_in * 1000);
-  await updateAccessToken("google", data.access_token, newExpiresAt);
+  await updateAccessToken(businessId, "google", data.access_token, newExpiresAt);
 
   return {
     accessToken: data.access_token,
@@ -131,10 +136,11 @@ async function getValidAccessToken(): Promise<{
   };
 }
 
-export async function fetchRealGoogleBusinessLocations(): Promise<
-  GoogleBusinessLocation[]
-> {
-  const { accessToken, accountResourceName } = await getValidAccessToken();
+export async function fetchRealGoogleBusinessLocations(
+  businessId: string
+): Promise<GoogleBusinessLocation[]> {
+  const { accessToken, accountResourceName } =
+    await getValidGoogleAccessToken(businessId);
 
   const url = new URL(`${BUSINESS_INFO_BASE}/${accountResourceName}/locations`);
   url.searchParams.set("readMask", "name,title,storefrontAddress,metadata");
@@ -185,9 +191,11 @@ function toGoogleBusinessPost(
 
 // locationId は fetchRealGoogleBusinessLocations() が返す "locations/xxx" 形式を想定。
 export async function createRealGoogleBusinessPost(
+  businessId: string,
   input: CreateGoogleBusinessPostInput
 ): Promise<GoogleBusinessPost> {
-  const { accessToken, accountResourceName } = await getValidAccessToken();
+  const { accessToken, accountResourceName } =
+    await getValidGoogleAccessToken(businessId);
 
   const parent = `${accountResourceName}/${input.locationId}`;
   const res = await fetch(`${LEGACY_MYBUSINESS_BASE}/${parent}/localPosts`, {
@@ -213,10 +221,12 @@ export async function createRealGoogleBusinessPost(
 }
 
 export async function fetchRealGoogleBusinessPosts(
+  businessId: string,
   locationId: string,
   sourceInstagramPostIdByPostName: Map<string, string>
 ): Promise<GoogleBusinessPost[]> {
-  const { accessToken, accountResourceName } = await getValidAccessToken();
+  const { accessToken, accountResourceName } =
+    await getValidGoogleAccessToken(businessId);
   const parent = `${accountResourceName}/${locationId}`;
 
   const res = await fetch(`${LEGACY_MYBUSINESS_BASE}/${parent}/localPosts`, {

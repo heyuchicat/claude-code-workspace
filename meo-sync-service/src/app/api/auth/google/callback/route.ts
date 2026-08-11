@@ -8,23 +8,30 @@ export async function GET(request: NextRequest) {
   const state = request.nextUrl.searchParams.get("state");
   const savedState = request.cookies.get(STATE_COOKIE)?.value;
 
+  const businessId = state?.split(".")[0];
+
   const redirectWithError = (message: string) =>
     NextResponse.redirect(
-      new URL(`/?error=${encodeURIComponent(message)}`, request.url)
+      new URL(
+        `${businessId ? `/businesses/${businessId}` : "/businesses"}?error=${encodeURIComponent(message)}`,
+        request.url
+      )
     );
 
   if (!code) return redirectWithError("Google連携がキャンセルされました");
-  if (!state || state !== savedState) {
+  if (!state || !businessId || state !== savedState) {
     return redirectWithError("不正なリクエストです(state不一致)");
   }
 
   try {
-    await completeGoogleOAuth(code);
+    await completeGoogleOAuth(businessId, code);
   } catch (err) {
     return redirectWithError(err instanceof Error ? err.message : String(err));
   }
 
-  const res = NextResponse.redirect(new URL("/?connected=google", request.url));
+  const res = NextResponse.redirect(
+    new URL(`/businesses/${businessId}?connected=google`, request.url)
+  );
   res.cookies.delete(STATE_COOKIE);
   return res;
 }

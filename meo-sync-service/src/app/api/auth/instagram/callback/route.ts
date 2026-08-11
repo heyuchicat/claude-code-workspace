@@ -8,23 +8,31 @@ export async function GET(request: NextRequest) {
   const state = request.nextUrl.searchParams.get("state");
   const savedState = request.cookies.get(STATE_COOKIE)?.value;
 
+  // stateは "<businessId>.<nonce>" の形式
+  const businessId = state?.split(".")[0];
+
   const redirectWithError = (message: string) =>
     NextResponse.redirect(
-      new URL(`/?error=${encodeURIComponent(message)}`, request.url)
+      new URL(
+        `${businessId ? `/businesses/${businessId}` : "/businesses"}?error=${encodeURIComponent(message)}`,
+        request.url
+      )
     );
 
   if (!code) return redirectWithError("Instagram連携がキャンセルされました");
-  if (!state || state !== savedState) {
+  if (!state || !businessId || state !== savedState) {
     return redirectWithError("不正なリクエストです(state不一致)");
   }
 
   try {
-    await completeInstagramOAuth(code);
+    await completeInstagramOAuth(businessId, code);
   } catch (err) {
     return redirectWithError(err instanceof Error ? err.message : String(err));
   }
 
-  const res = NextResponse.redirect(new URL("/?connected=instagram", request.url));
+  const res = NextResponse.redirect(
+    new URL(`/businesses/${businessId}?connected=instagram`, request.url)
+  );
   res.cookies.delete(STATE_COOKIE);
   return res;
 }

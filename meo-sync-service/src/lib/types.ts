@@ -46,3 +46,54 @@ export type LinkMapping = {
   locationId: string;
   linkedAt: string; // ISO8601
 };
+
+export type GoogleReview = {
+  id: string;
+  locationId: string;
+  reviewerName: string;
+  rating: 1 | 2 | 3 | 4 | 5;
+  comment: string;
+  createTime: string; // ISO8601
+  reply: { comment: string; updateTime: string } | null;
+};
+
+// Google Business Profile Performance API の日次インサイト
+export type DailyMetric = { date: string; value: number };
+
+export type InsightsSummary = {
+  locationId: string;
+  rangeStart: string;
+  rangeEnd: string;
+  views: DailyMetric[]; // 検索/マップでの表示回数
+  searchKeywords: { keyword: string; count: number }[];
+  callClicks: number;
+  websiteClicks: number;
+  directionRequests: number;
+};
+
+export type ScheduledPost = {
+  id: string;
+  locationId: string;
+  summary: string;
+  mediaUrl: string;
+  scheduledAt: string; // ISO8601
+  status: "PENDING" | "PUBLISHED" | "FAILED";
+  errorMessage: string | null;
+  publishedAt: string | null;
+};
+
+export type QAEntry = {
+  id: string;
+  locationId: string;
+  question: string;
+  answer: string | null;
+  answeredAt: string | null;
+};
+
+export type RankCheckResult = {
+  id: string;
+  locationId: string;
+  keyword: string;
+  rank: number | null; // nullは圏外
+  checkedAt: string; // ISO8601
+};
