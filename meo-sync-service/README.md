@@ -75,6 +75,21 @@ Instagram / Google 連携用の環境変数(`INSTAGRAM_APP_ID` など)は空の�
    [公式ドキュメント](https://developers.google.com/my-business/content/overview)で
    最新のエンドポイントをご確認ください。`src/lib/google-*.ts` に実装箇所があります。
 
+### 代理店として複数の顧客のGoogleビジネスプロフィールを管理する場合
+
+顧客のGoogleアカウントのパスワードを教えてもらう必要はありません。Googleビジネスプロフィールには、
+オーナー(顧客)が別のGoogleアカウントを「管理者(Manager)」として招待できる正規の権限委譲機能が
+あります。
+
+1. 顧客に、Googleビジネスプロフィールの管理画面(business.google.com)から
+   「ユーザーを追加」→あなた(代理店)のGoogleアカウントのメールアドレスを入力して招待してもらう
+   (具体的な画面操作はGoogle側の仕様変更があり得るため、Googleの公式ヘルプで最新手順をご確認ください)
+2. 招待を承諾すると、あなたのGoogleアカウントでそのGoogleビジネスプロフィールを管理できるようになる
+3. 本アプリでは、**あなた自身のGoogleアカウントで**各店舗の「Googleを連携する」ボタンから連携してください
+   (顧客ごとに別のGoogleアカウントでログインする必要はなく、毎回同じあなたのアカウントでOKです)
+4. もしあなたのGoogleアカウントが複数の顧客のビジネスプロフィールにアクセスできる場合、
+   連携時に「どの顧客のアカウントをこの店舗に紐づけるか」を選ぶ画面が自動的に表示されます
+
 ### 予約投稿の自動公開(cron設定)
 
 予約投稿は自動では公開されません。「設定」画面(店舗一覧の右上「設定」リンク)に
@@ -127,6 +142,7 @@ src/
     businesses/[businessId]/     店舗ごとのダッシュボード(タブ切り替えUI)
       _components/                SyncTab, ReviewsTab, InsightsTab, ScheduledPostsTab,
                                    QATab, ProductsTab, RankCheckTab
+      select-google-account/      Google連携時、アクセス可能な顧客が複数ある場合の選択画面
     api/
       setup/                      初回セットアップ(GET状態確認 / POST作成)
       settings/                   cron秘密鍵の確認・再生成、パスワード変更
@@ -136,6 +152,7 @@ src/
       businesses/                 店舗のCRUD
       businesses/[businessId]/
         auth/status, auth/*/disconnect  接続状態・接続解除
+        google-account-selection/  Google連携時の複数アカウント選択(一覧取得・確定)
         instagram/account,posts   Instagram投稿取得
         google/locations,posts    Googleロケーション・投稿取得
         sync/, sync/all/          投稿の連携実行
@@ -151,6 +168,7 @@ src/
     admin-settings.ts             管理者パスワード・各種秘密鍵のDBアクセス
     businesses.ts                店舗(テナント)のDBアクセス
     connections.ts                OAuth接続情報(トークン)のDBアクセス(店舗別)
+    pending-google-connection.ts  Google連携で複数アカウントから選択するまでの一時保管
     store.ts                     投稿連携履歴(LinkMapping)のDBアクセス
     review-store.ts / qa-store.ts  返信・回答の監査ログ
     scheduled-posts-store.ts     予約投稿のDBアクセス
@@ -168,7 +186,8 @@ src/
     session.ts / proxy.ts        管理者ログインのセッション管理・保護
   generated/prisma/             Prisma Client(自動生成。gitignore対象)
 prisma/schema.prisma           DBスキーマ(AdminSettings, Business, Connection,
-                                LinkMapping, ScheduledPost, QAEntry, ReviewReply, RankCheck)
+                                PendingGoogleConnection, LinkMapping, ScheduledPost,
+                                QAEntry, ReviewReply, RankCheck)
 ```
 
 ## デプロイ時の注意

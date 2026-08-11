@@ -23,15 +23,19 @@ export async function GET(request: NextRequest) {
     return redirectWithError("不正なリクエストです(state不一致)");
   }
 
+  let result;
   try {
-    await completeGoogleOAuth(businessId, code);
+    result = await completeGoogleOAuth(businessId, code);
   } catch (err) {
     return redirectWithError(err instanceof Error ? err.message : String(err));
   }
 
-  const res = NextResponse.redirect(
-    new URL(`/businesses/${businessId}?connected=google`, request.url)
-  );
+  const targetUrl =
+    result.status === "needs_selection"
+      ? `/businesses/${businessId}/select-google-account?pendingId=${result.pendingId}`
+      : `/businesses/${businessId}?connected=google`;
+
+  const res = NextResponse.redirect(new URL(targetUrl, request.url));
   res.cookies.delete(STATE_COOKIE);
   return res;
 }

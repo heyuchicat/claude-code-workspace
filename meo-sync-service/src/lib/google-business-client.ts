@@ -4,6 +4,12 @@ import {
   updateAccessToken,
   upsertConnection,
 } from "./connections";
+import {
+  createPendingGoogleConnection,
+  deletePendingGoogleConnection,
+  getPendingGoogleConnection,
+  type GoogleAccountOption,
+} from "./pending-google-connection";
 import type { CreateGoogleBusinessPostInput } from "./mock-google-business";
 
 // 実際の Google Business Profile API を呼び出すクライアント。
@@ -58,10 +64,17 @@ async function exchangeCodeForTokens(code: string) {
   }>;
 }
 
+export type CompleteGoogleOAuthResult =
+  | { status: "connected" }
+  | { status: "needs_selection"; pendingId: string; accounts: GoogleAccountOption[] };
+
+// OAuth完了後、そのGoogleアカウントがManager権限を持つビジネスアカウントが
+// 複数ある場合(代理店が複数の顧客からアクセス権をもらっているケース)は、
+// どの顧客をこの店舗に紐づけるか選んでもらう必要があるため即座には確定しない。
 export async function completeGoogleOAuth(
   businessId: string,
   code: string
-): Promise<void> {
+): Promise<CompleteGoogleOAuthResult> {
   const tokens = await exchangeCodeForTokens(code);
   if (!tokens.refresh_token) {
     throw new Error(
@@ -76,20 +89,74 @@ export async function completeGoogleOAuth(
     throw new Error(`Googleアカウント取得に失敗しました: ${await accountRes.text()}`);
   }
   const accountData = await accountRes.json();
-  const account = accountData.accounts?.[0];
-  if (!account) {
-    throw new Error("Googleビジネスアカウントが見つかりませんでした");
+  const accounts = (accountData.accounts ?? []) as {
+    name: string;
+    accountName?: string;
+  }[];
+
+  if (accounts.length === 0) {
+    throw new Error(
+      "アクセス可能なGoogleビジネスアカウントが見つかりませんでした。顧客側でこのGoogleアカウントを「ユーザー(管理者)」として招待済みか確認してください"
+    );
+  }
+
+  const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+
+  if (accounts.length === 1) {
+    await upsertConnection({
+      businessId,
+      provider: "google",
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresAt,
+      externalAccountId: accounts[0].name, // 例: "accounts/123456789"
+      externalLabel: accounts[0].accountName ?? accounts[0].name,
+    });
+    return { status: "connected" };
+  }
+
+  const options: GoogleAccountOption[] = accounts.map((a) => ({
+    name: a.name,
+    accountName: a.accountName ?? a.name,
+  }));
+
+  const pending = await createPendingGoogleConnection({
+    businessId,
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token,
+    expiresAt,
+    accounts: options,
+  });
+
+  return { status: "needs_selection", pendingId: pending.id, accounts: options };
+}
+
+// アクセス可能なアカウントが複数あった場合に、選択されたアカウントで接続を確定する。
+export async function finalizeGoogleAccountSelection(
+  pendingId: string,
+  accountResourceName: string
+): Promise<void> {
+  const pending = await getPendingGoogleConnection(pendingId);
+  if (!pending) {
+    throw new Error("選択の有効期限が切れました。もう一度連携をやり直してください");
+  }
+
+  const chosen = pending.accounts.find((a) => a.name === accountResourceName);
+  if (!chosen) {
+    throw new Error("不正なアカウントが選択されました");
   }
 
   await upsertConnection({
-    businessId,
+    businessId: pending.businessId,
     provider: "google",
-    accessToken: tokens.access_token,
-    refreshToken: tokens.refresh_token,
-    expiresAt: new Date(Date.now() + tokens.expires_in * 1000),
-    externalAccountId: account.name, // 例: "accounts/123456789"
-    externalLabel: account.accountName ?? account.name,
+    accessToken: pending.accessToken,
+    refreshToken: pending.refreshToken,
+    expiresAt: pending.expiresAt,
+    externalAccountId: chosen.name,
+    externalLabel: chosen.accountName,
   });
+
+  await deletePendingGoogleConnection(pendingId);
 }
 
 // レビュー・インサイト等、他のGoogle API呼び出しからも使う共通のトークン取得。

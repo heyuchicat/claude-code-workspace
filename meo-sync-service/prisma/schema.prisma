@@ -111,3 +111,16 @@ model RankCheck {
   rank       Int? // nullは圏外(上位20件に見つからず)
   checkedAt  DateTime @default(now())
 }
+
+// Google OAuth完了直後、アクセス可能なGoogleビジネスアカウントが複数ある場合に
+// 「どのアカウント(顧客)をこの店舗に紐づけるか」を選ぶまでの一時保管領域。
+// 選択完了後にConnectionへ書き込まれ、この行は削除される(TTL 10分)。
+model PendingGoogleConnection {
+  id            String   @id @default(cuid())
+  businessId    String
+  accessToken   String
+  refreshToken  String
+  expiresAt     DateTime
+  accountsJson  String // JSON文字列: [{ name, accountName }]
+  createdAt     DateTime @default(now())
+}
