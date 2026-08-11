@@ -10,6 +10,7 @@ import InsightsTab from "./_components/InsightsTab";
 import ScheduledPostsTab from "./_components/ScheduledPostsTab";
 import QATab from "./_components/QATab";
 import RankCheckTab from "./_components/RankCheckTab";
+import ProductsTab from "./_components/ProductsTab";
 
 const TABS = [
   { id: "sync", label: "投稿連携" },
@@ -17,6 +18,7 @@ const TABS = [
   { id: "insights", label: "インサイト" },
   { id: "scheduled", label: "予約投稿" },
   { id: "qa", label: "Q&A" },
+  { id: "products", label: "商品・サービス" },
   { id: "rank", label: "順位チェック" },
 ] as const;
 
@@ -91,6 +93,7 @@ function Dashboard({ businessId }: { businessId: string }) {
       {tab === "insights" && <InsightsTab businessId={businessId} />}
       {tab === "scheduled" && <ScheduledPostsTab businessId={businessId} />}
       {tab === "qa" && <QATab businessId={businessId} />}
+      {tab === "products" && <ProductsTab businessId={businessId} />}
       {tab === "rank" && <RankCheckTab businessId={businessId} />}
     </main>
   );

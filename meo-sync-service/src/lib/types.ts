@@ -97,3 +97,16 @@ export type RankCheckResult = {
   rank: number | null; // nullは圏外
   checkedAt: string; // ISO8601
 };
+
+// Googleビジネスプロフィールの商品・サービス(Products)カタログ。
+// 検索結果・マップ上で商品名/価格/写真を目立たせられる公式機能。
+export type BusinessProduct = {
+  id: string;
+  locationId: string;
+  category: string;
+  name: string;
+  description: string;
+  priceYen: number | null;
+  photoUrl: string;
+  createdAt: string; // ISO8601
+};

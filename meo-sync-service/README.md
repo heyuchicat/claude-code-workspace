@@ -12,6 +12,7 @@ Instagram連携・複数店舗管理・クチコミ返信・インサイト分�
 - **公式インサイト分析**: 閲覧数・検索キーワード・電話タップ数・ルート検索数などをグラフ表示(Google公式API)
 - **予約投稿**: 日時を指定してGoogleビジネスプロフィールへ自動公開(cron連携)
 - **Q&A管理**: Googleに寄せられた質問への回答
+- **商品・サービスカタログ**: Googleビジネスプロフィール上に商品名・価格・写真を掲載し、検索結果・マップ上で目立たせる(Google Adsのような有料広告ではなく、プロフィール上の公式な商品掲載機能)
 - **検索順位チェック(実験的)**: Googleマップでの検索順位を自動チェック。**⚠ Googleの利用規約に抵触しうる機能です。下記の注意事項を必ず読んでから使ってください。**
 - 管理者パスワードによるログイン保護
 - SQLiteでの永続化(連携トークン・同期履歴・予約投稿・チェック履歴)
@@ -146,6 +147,7 @@ src/
         reviews/, reviews/reply/  クチコミ取得・返信
         insights/                 インサイト取得
         qa/, qa/answer/           Q&A取得・回答
+        products/, products/[id]/  商品・サービスの登録・一覧・削除
         scheduled-posts/          予約投稿のCRUD
         rank-checks/              順位チェックの実行・履歴取得
       cron/publish-scheduled-posts/  予約投稿の自動公開(CRON_SECRET保護)
@@ -163,6 +165,7 @@ src/
     google-reviews-client.ts     Googleクチコミ実APIクライアント
     google-insights-client.ts    Google Performance API実クライアント
     google-qa-client.ts          Google Q&A実APIクライアント
+    google-products-client.ts    Google商品・サービス(Products)実APIクライアント
     rank-checker.ts              検索順位チェック(Playwright, 実験的)
     data-source.ts               mock/実APIを接続状態に応じて切り替えるファサード
     sync-service.ts             「紐づけ」処理のコアロジック

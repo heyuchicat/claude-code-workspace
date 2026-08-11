@@ -3,23 +3,26 @@
 // 未接続ならデモ用のmockデータを使う。すべて店舗(businessId)単位。
 
 import { getConnection } from "./connections";
-import { GoogleBusinessLocation, GoogleBusinessPost, GoogleReview, InsightsSummary, InstagramAccount, InstagramPost, QAEntry } from "./types";
+import { BusinessProduct, GoogleBusinessLocation, GoogleBusinessPost, GoogleReview, InsightsSummary, InstagramAccount, InstagramPost, QAEntry } from "./types";
 import * as mockInstagram from "./mock-instagram";
 import * as mockGoogle from "./mock-google-business";
 import * as mockReviews from "./mock-reviews";
 import * as mockInsights from "./mock-insights";
 import * as mockQa from "./mock-qa";
+import * as mockProducts from "./mock-products";
 import * as realInstagram from "./instagram-client";
 import * as realGoogle from "./google-business-client";
 import * as realReviews from "./google-reviews-client";
 import * as realInsights from "./google-insights-client";
 import * as realQa from "./google-qa-client";
+import * as realProducts from "./google-products-client";
 import { store } from "./store";
 import { logReviewReply } from "./review-store";
 import { logQaAnswer } from "./qa-store";
 import type { CreateGoogleBusinessPostInput } from "./mock-google-business";
+import type { CreateProductInput } from "./mock-products";
 
-export type { CreateGoogleBusinessPostInput };
+export type { CreateGoogleBusinessPostInput, CreateProductInput };
 
 async function isConnected(
   businessId: string,
@@ -160,6 +163,37 @@ export async function answerQuestion(
     await mockQa.answerQuestion(questionId, answerText);
   }
   await logQaAnswer(businessId, locationId, questionId, question, answerText);
+}
+
+export async function fetchProducts(
+  businessId: string,
+  locationId: string
+): Promise<BusinessProduct[]> {
+  if (await isConnected(businessId, "google")) {
+    return realProducts.fetchRealProducts(businessId, locationId);
+  }
+  return mockProducts.fetchProducts();
+}
+
+export async function createProduct(
+  businessId: string,
+  input: CreateProductInput
+): Promise<BusinessProduct> {
+  if (await isConnected(businessId, "google")) {
+    return realProducts.createRealProduct(businessId, input);
+  }
+  return mockProducts.createProduct(input);
+}
+
+export async function deleteProduct(
+  businessId: string,
+  productId: string
+): Promise<void> {
+  if (await isConnected(businessId, "google")) {
+    await realProducts.deleteRealProduct(businessId, productId);
+  } else {
+    await mockProducts.deleteProduct(productId);
+  }
 }
 
 export async function getConnectionStatus(businessId: string) {
