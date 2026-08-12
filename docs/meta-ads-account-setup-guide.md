@@ -15,6 +15,29 @@
 
 ---
 
+## よく使うリンク集
+
+まずログインしてから、下のリンクを開いてください。
+ログインしていないと「ログイン画面」が先に出ます。
+
+| 何をする場所？ | リンク | いつ使う？ |
+|---|---|---|
+| Meta Business Suite（全体のトップ画面） | https://business.facebook.com/ | まずここから入る |
+| アカウントの品質 | https://business.facebook.com/accountquality | ①今の状態を見るとき |
+| 広告アカウントの一覧・設定 | https://adsmanager.facebook.com/adsmanager | 広告アカウントを選ぶとき |
+| 支払い設定（お金の登録） | https://business.facebook.com/billing_hub | ②支払い方法を登録するとき |
+| セキュリティセンター | https://business.facebook.com/security | 本人確認・安全設定を見るとき |
+| ビジネス設定（会社の情報） | https://business.facebook.com/settings | ③本人確認・会社情報を出すとき |
+| イベントマネージャ（計測タグ） | https://business.facebook.com/events_manager2 | 広告の効果を測る設定をするとき |
+| 広告のルール（ポリシー） | https://www.facebook.com/policies/ads/ | ⑤広告を作る前の確認 |
+| 困ったときのヘルプセンター | https://www.facebook.com/business/help | わからないことがあったとき |
+
+> **メモ:** リンクを開くと、複数のビジネス／広告アカウントを持っている場合は
+> 選択画面が出ることがあります。そのときは番号 `1057823910149907` の
+> アカウントを選んでください。
+
+---
+
 ## これからやる5つのこと
 
 ### ① 今の状態を見る
