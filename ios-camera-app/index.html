@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>カメラ</title>
+
+<!-- iPhoneでホーム画面に追加してアプリ風に使うための設定 -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="カメラ" />
+<meta name="theme-color" content="#000000" />
+<link rel="apple-touch-icon" href="icons/icon-180.png" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="manifest" href="manifest.json" />
+
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- カメラ映像プレビュー -->
+  <video id="preview" autoplay playsinline muted></video>
+  <canvas id="capture-canvas" hidden></canvas>
+
+  <!-- 起動直後のカメラ許可待ち・エラー表示 -->
+  <div id="status-overlay" class="hidden">
+    <p id="status-message">カメラを起動しています…</p>
+    <button id="retry-btn" class="hidden">再試行</button>
+  </div>
+
+  <!-- シャッター時の白フラッシュ演出 -->
+  <div id="flash-overlay"></div>
+
+  <!-- 上部バー -->
+  <div class="top-bar">
+    <button id="flash-toggle" class="icon-btn" aria-label="フラッシュ切り替え">
+      <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+    </button>
+    <div id="zoom-indicator" class="hidden"></div>
+  </div>
+
+  <!-- 下部コントロールバー -->
+  <div class="bottom-bar">
+    <button id="gallery-btn" class="thumb-btn" aria-label="撮影した写真">
+      <span id="thumb-preview"></span>
+    </button>
+
+    <button id="shutter-btn" aria-label="シャッター"></button>
+
+    <button id="switch-camera-btn" class="icon-btn" aria-label="カメラ切り替え">
+      <svg viewBox="0 0 24 24"><path d="M12 5V2L8 6l4 4V7c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 13c0-4.42-3.58-8-8-8zm-6 8c0-1.01.25-1.97.7-2.8L5.24 8.74A7.93 7.93 0 0 0 4 13c0 4.42 3.58 8 8 8v3l4-4-4-4v3c-3.31 0-6-2.69-6-6z"/></svg>
+    </button>
+  </div>
+
+  <!-- 撮影した写真の一覧・プレビュー -->
+  <div id="gallery-view" class="hidden">
+    <div class="gallery-header">
+      <button id="gallery-close-btn" class="text-btn">閉じる</button>
+      <span id="gallery-count"></span>
+    </div>
+    <div id="gallery-grid"></div>
+    <p id="gallery-empty" class="hidden">まだ写真がありません</p>
+  </div>
+
+  <!-- 個別写真のフルスクリーン表示 -->
+  <div id="photo-view" class="hidden">
+    <img id="photo-view-img" alt="撮影した写真" />
+    <div class="photo-view-bar">
+      <button id="photo-back-btn" class="text-btn">戻る</button>
+      <button id="photo-download-btn" class="text-btn">保存</button>
+      <button id="photo-delete-btn" class="text-btn danger">削除</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
