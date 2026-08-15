@@ -123,13 +123,59 @@ html, body {
   color: #000;
 }
 
-#zoom-indicator {
-  position: absolute;
-  right: 16px;
-  font-size: 13px;
-  background: rgba(60,60,60,0.5);
-  padding: 4px 10px;
+#record-timer {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background: rgba(255, 69, 58, 0.9);
+  padding: 5px 12px;
   border-radius: 12px;
+}
+
+/* 写真/ビデオ モード切り替え */
+.mode-switch {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 110px;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+}
+
+.mode-btn {
+  border: none;
+  background: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 2px;
+}
+
+.mode-btn.active {
+  color: #ffd60a;
+}
+
+#shutter-btn.video-mode {
+  border-color: #ff453a;
+}
+
+#shutter-btn.video-mode::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 6px;
+  background: #ff453a;
+}
+
+#shutter-btn.video-mode.recording {
+  background: transparent;
+}
+
+#shutter-btn.video-mode.recording::before {
+  border-radius: 3px;
+  inset: 24px;
 }
 
 /* 下部バー */
@@ -236,11 +282,23 @@ html, body {
 }
 
 .gallery-item {
+  position: relative;
   aspect-ratio: 1;
   background-size: cover;
   background-position: center;
   border: none;
   padding: 0;
+}
+
+.gallery-item.is-video::after {
+  content: "";
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' d='M8 5v14l11-7z'/></svg>") center/12px no-repeat;
 }
 
 #gallery-empty {
@@ -249,8 +307,8 @@ html, body {
   margin-top: 40%;
 }
 
-/* 個別写真ビュー */
-#photo-view {
+/* 個別の写真・動画ビュー */
+#media-view {
   position: absolute;
   inset: 0;
   background: #000;
@@ -259,7 +317,8 @@ html, body {
   flex-direction: column;
 }
 
-#photo-view-img {
+#media-view-img,
+#media-view-video {
   flex: 1;
   width: 100%;
   min-height: 0;
@@ -272,6 +331,140 @@ html, body {
   align-items: center;
   padding: 14px 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
   background: rgba(20,20,20,0.9);
+}
+
+/* ==================== 偽装ブラウザ画面 ==================== */
+#disguise-view {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: #f2f2f2;
+  color: #1c1c1e;
+}
+
+.fake-topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 12px 8px;
+  background: #f7f7f8;
+  border-bottom: 1px solid #e0e0e2;
+}
+
+.fake-address {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: #e4e4e7;
+  color: #6b6b70;
+  font-size: 14px;
+}
+
+.fake-address span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fake-lock {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  fill: #8a8a8e;
+}
+
+#disguise-rec-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: auto;
+  background: transparent;
+}
+
+#disguise-rec-dot.active {
+  background: #ff453a;
+  animation: rec-dot-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes rec-dot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.fake-icon-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  color: #4a4a4e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.fake-icon-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fake-content {
+  flex: 1;
+  overflow: hidden;
+  padding: 20px 16px;
+}
+
+.fake-block {
+  background: #e4e4e7;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.fake-block-title {
+  height: 22px;
+  width: 60%;
+  margin-bottom: 18px;
+}
+
+.fake-block-line {
+  height: 12px;
+  width: 100%;
+}
+
+.fake-block-line.short {
+  width: 40%;
+  margin-bottom: 22px;
+}
+
+.fake-card {
+  height: 90px;
+  border-radius: 12px;
+  background: #e9e9ec;
+  margin-bottom: 14px;
+}
+
+.fake-bottombar {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 8px 8px calc(env(safe-area-inset-bottom, 0px) + 8px);
+  background: #f7f7f8;
+  border-top: 1px solid #e0e0e2;
 }
 
 .hidden {
