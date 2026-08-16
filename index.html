@@ -63,13 +63,14 @@
   </div>
 
   <!-- ==================== 偽装ブラウザ画面(既定表示) ====================
-       通常のWebブラウザに見える画面。record-trigger(更新アイコン)をタップすると
-       ビデオ撮影を開始/停止する。住所欄を長押し(0.8秒)すると通常のカメラ操作画面に切り替わる。 -->
+       実際にWebページを読み込む本物のブラウザ画面。住所欄にURLや検索語を入力して
+       閲覧できる。record-trigger(更新アイコン)をタップするとビデオ撮影を開始/停止する。
+       住所欄を長押し(0.8秒)すると通常のカメラ操作画面に切り替わる。 -->
   <div id="disguise-view">
     <div class="fake-topbar">
       <div id="disguise-address" class="fake-address">
         <svg class="fake-lock" viewBox="0 0 24 24"><path d="M6 10V8a6 6 0 1 1 12 0v2h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V11a1 1 0 0 1 1-1h1zm2 0h8V8a4 4 0 1 0-8 0v2z"/></svg>
-        <span>検索、またはWebサイトを入力</span>
+        <input id="disguise-url-input" type="text" inputmode="url" placeholder="検索、またはWebサイトを入力" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
         <span id="disguise-rec-dot"></span>
       </div>
       <button id="disguise-record-btn" class="fake-icon-btn" aria-label="更新">
@@ -77,18 +78,11 @@
       </button>
     </div>
     <div class="fake-content">
-      <div class="fake-block fake-block-title"></div>
-      <div class="fake-block fake-block-line"></div>
-      <div class="fake-block fake-block-line short"></div>
-      <div class="fake-card"></div>
-      <div class="fake-card"></div>
-      <div class="fake-block fake-block-line"></div>
-      <div class="fake-block fake-block-line"></div>
-      <div class="fake-block fake-block-line short"></div>
+      <iframe id="disguise-frame" title="browser"></iframe>
     </div>
     <div class="fake-bottombar">
-      <button class="fake-icon-btn" aria-label="戻る"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
-      <button class="fake-icon-btn" aria-label="進む"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button id="disguise-back-btn" class="fake-icon-btn" aria-label="戻る"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button id="disguise-forward-btn" class="fake-icon-btn" aria-label="進む"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
       <button class="fake-icon-btn" aria-label="共有"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5M5 21h14"/></svg></button>
       <button class="fake-icon-btn" aria-label="ブックマーク"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4V3z"/></svg></button>
       <button class="fake-icon-btn" aria-label="タブ">1</button>
