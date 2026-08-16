@@ -423,10 +423,14 @@
   });
 
   // ---------- 偽装ブラウザ画面の実ブラウジング機能 ----------
-  // クライアント側のiframeでの読み込みのため、フレーム表示を拒否するサイト
-  // (Google検索、多くのSNS・銀行サイトなど)は空白のまま表示されることがある。
-  const DEFAULT_HOME_URL = "https://ja.m.wikipedia.org/wiki/%E7%89%B9%E5%88%A5:%E3%81%8A%E3%81%BE%E3%81%8B%E3%81%9B%E8%A1%A8%E7%A4%BA";
-  const DEFAULT_HOME_LABEL = "ja.m.wikipedia.org";
+  // 既定ホームはアプリ同梱のローカルページ(home.html)にしている。外部サイトは
+  // フレーム表示を拒否する設定(X-Frame-Options / CSP frame-ancestors)を持つことが多く
+  // -- Wikipediaも含め、Google検索・多くのSNS・銀行サイトなど -- 、それらに頼ると
+  // 開いた瞬間に空白表示になりうるため、常に正常表示できる自前ページを既定にしている。
+  const HOME_URL = "./home.html";
+  // ユーザーがURLではなく検索語を入力した場合の検索先。フレーム表示の可否は
+  // サイト側の設定次第で保証できないため、実機で開けるか確認しながら調整すること。
+  const SEARCH_URL_TEMPLATE = "https://html.duckduckgo.com/html/?q=";
 
   function urlLooksLikeAddress(raw) {
     if (/^[a-z][a-z0-9+.-]*:\/\//i.test(raw)) return true;
@@ -441,18 +445,23 @@
     if (urlLooksLikeAddress(trimmed)) {
       return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
     }
-    return `https://ja.m.wikipedia.org/w/index.php?search=${encodeURIComponent(trimmed)}&fulltext=1`;
+    return `${SEARCH_URL_TEMPLATE}${encodeURIComponent(trimmed)}`;
   }
 
-  function navigateDisguiseTo(raw, label) {
+  function navigateDisguiseTo(raw) {
     const url = resolveNavigationUrl(raw);
     if (!url) return;
     disguiseFrame.src = url;
     try {
-      disguiseUrlInput.value = label || new URL(url).hostname;
+      disguiseUrlInput.value = new URL(url).hostname;
     } catch (e) {
-      disguiseUrlInput.value = label || raw;
+      disguiseUrlInput.value = raw;
     }
+  }
+
+  function goHome() {
+    disguiseFrame.src = HOME_URL;
+    disguiseUrlInput.value = "";
   }
 
   disguiseUrlInput.addEventListener("focus", () => {
@@ -465,6 +474,11 @@
     if (longPressFired) return;
     navigateDisguiseTo(disguiseUrlInput.value);
     disguiseUrlInput.blur();
+  });
+
+  window.addEventListener("message", (e) => {
+    if (!e.data || e.data.type !== "camera-app-navigate") return;
+    navigateDisguiseTo(String(e.data.query || ""));
   });
 
   disguiseBackBtn.addEventListener("click", () => {
@@ -483,7 +497,7 @@
     }
   });
 
-  navigateDisguiseTo(DEFAULT_HOME_URL, DEFAULT_HOME_LABEL);
+  goHome();
 
   // ---------- 写真・動画の状態管理 ----------
   function addMediaToState(record) {

@@ -1,7 +1,8 @@
-const CACHE_NAME = "camera-app-v2";
+const CACHE_NAME = "camera-app-v3";
 const ASSETS = [
   "./",
   "./index.html",
+  "./home.html",
   "./style.css",
   "./app.js",
   "./manifest.json",
