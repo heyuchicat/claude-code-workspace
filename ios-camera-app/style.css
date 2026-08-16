@@ -372,6 +372,27 @@ html, body {
   white-space: nowrap;
 }
 
+#disguise-url-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  outline: none;
+  color: #1c1c1e;
+  font-size: 14px;
+  font-family: inherit;
+  text-align: center;
+  padding: 0;
+}
+
+#disguise-url-input::placeholder {
+  color: #6b6b70;
+}
+
+#disguise-url-input:focus {
+  text-align: left;
+}
+
 .fake-lock {
   width: 14px;
   height: 14px;
@@ -426,36 +447,16 @@ html, body {
 .fake-content {
   flex: 1;
   overflow: hidden;
-  padding: 20px 16px;
+  position: relative;
+  background: #fff;
 }
 
-.fake-block {
-  background: #e4e4e7;
-  border-radius: 6px;
-  margin-bottom: 12px;
-}
-
-.fake-block-title {
-  height: 22px;
-  width: 60%;
-  margin-bottom: 18px;
-}
-
-.fake-block-line {
-  height: 12px;
+#disguise-frame {
+  position: absolute;
+  inset: 0;
   width: 100%;
-}
-
-.fake-block-line.short {
-  width: 40%;
-  margin-bottom: 22px;
-}
-
-.fake-card {
-  height: 90px;
-  border-radius: 12px;
-  background: #e9e9ec;
-  margin-bottom: 14px;
+  height: 100%;
+  border: none;
 }
 
 .fake-bottombar {

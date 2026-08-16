@@ -20,6 +20,10 @@
 
   const disguiseView = document.getElementById("disguise-view");
   const disguiseAddress = document.getElementById("disguise-address");
+  const disguiseUrlInput = document.getElementById("disguise-url-input");
+  const disguiseFrame = document.getElementById("disguise-frame");
+  const disguiseBackBtn = document.getElementById("disguise-back-btn");
+  const disguiseForwardBtn = document.getElementById("disguise-forward-btn");
   const disguiseRecordBtn = document.getElementById("disguise-record-btn");
   const disguiseRecDot = document.getElementById("disguise-rec-dot");
 
@@ -405,12 +409,81 @@
   hideBtn.addEventListener("click", showDisguise);
 
   let longPressTimer = null;
+  let longPressFired = false;
   disguiseAddress.addEventListener("pointerdown", () => {
-    longPressTimer = setTimeout(exitDisguise, 800);
+    longPressFired = false;
+    longPressTimer = setTimeout(() => {
+      longPressFired = true;
+      disguiseUrlInput.blur();
+      exitDisguise();
+    }, 800);
   });
   ["pointerup", "pointerleave", "pointercancel"].forEach((evt) => {
     disguiseAddress.addEventListener(evt, () => clearTimeout(longPressTimer));
   });
+
+  // ---------- 偽装ブラウザ画面の実ブラウジング機能 ----------
+  // クライアント側のiframeでの読み込みのため、フレーム表示を拒否するサイト
+  // (Google検索、多くのSNS・銀行サイトなど)は空白のまま表示されることがある。
+  const DEFAULT_HOME_URL = "https://ja.m.wikipedia.org/wiki/%E7%89%B9%E5%88%A5:%E3%81%8A%E3%81%BE%E3%81%8B%E3%81%9B%E8%A1%A8%E7%A4%BA";
+  const DEFAULT_HOME_LABEL = "ja.m.wikipedia.org";
+
+  function urlLooksLikeAddress(raw) {
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(raw)) return true;
+    return /^[^\s]+\.[^\s]{2,}([/?#].*)?$/i.test(raw);
+  }
+
+  function resolveNavigationUrl(raw) {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    if (/^(javascript|data|vbscript|file):/i.test(trimmed)) return null;
+
+    if (urlLooksLikeAddress(trimmed)) {
+      return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    }
+    return `https://ja.m.wikipedia.org/w/index.php?search=${encodeURIComponent(trimmed)}&fulltext=1`;
+  }
+
+  function navigateDisguiseTo(raw, label) {
+    const url = resolveNavigationUrl(raw);
+    if (!url) return;
+    disguiseFrame.src = url;
+    try {
+      disguiseUrlInput.value = label || new URL(url).hostname;
+    } catch (e) {
+      disguiseUrlInput.value = label || raw;
+    }
+  }
+
+  disguiseUrlInput.addEventListener("focus", () => {
+    disguiseUrlInput.select();
+  });
+
+  disguiseUrlInput.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (longPressFired) return;
+    navigateDisguiseTo(disguiseUrlInput.value);
+    disguiseUrlInput.blur();
+  });
+
+  disguiseBackBtn.addEventListener("click", () => {
+    try {
+      disguiseFrame.contentWindow.history.back();
+    } catch (e) {
+      // クロスオリジンのフレームで履歴操作が拒否される場合は無視
+    }
+  });
+
+  disguiseForwardBtn.addEventListener("click", () => {
+    try {
+      disguiseFrame.contentWindow.history.forward();
+    } catch (e) {
+      // クロスオリジンのフレームで履歴操作が拒否される場合は無視
+    }
+  });
+
+  navigateDisguiseTo(DEFAULT_HOME_URL, DEFAULT_HOME_LABEL);
 
   // ---------- 写真・動画の状態管理 ----------
   function addMediaToState(record) {
