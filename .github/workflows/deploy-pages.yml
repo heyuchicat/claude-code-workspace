@@ -3,7 +3,6 @@ name: Deploy iPhone camera app to GitHub Pages
 on:
   push:
     branches: [claude/iphone-camera-app-qw1sqr]
-    paths: ["ios-camera-app/**"]
   workflow_dispatch:
 
 permissions:
