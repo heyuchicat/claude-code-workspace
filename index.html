@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>ブラウザ</title>
+
+<!-- iPhoneでホーム画面に追加してアプリ風に使うための設定 -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="ブラウザ" />
+<meta name="theme-color" content="#f2f2f2" />
+<link rel="apple-touch-icon" href="icons/icon-180.png" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="manifest" href="manifest.json" />
+
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- カメラ映像プレビュー(常時起動。偽装画面の裏で動作し続ける) -->
+  <video id="preview" autoplay playsinline muted></video>
+  <canvas id="capture-canvas" hidden></canvas>
+
+  <!-- 起動直後のカメラ許可待ち・エラー表示 -->
+  <div id="status-overlay" class="hidden">
+    <p id="status-message">起動しています…</p>
+    <button id="retry-btn" class="hidden">再試行</button>
+  </div>
+
+  <!-- シャッター時の白フラッシュ演出(写真撮影時のみ) -->
+  <div id="flash-overlay"></div>
+
+  <!-- ==================== 通常のカメラ操作画面 ==================== -->
+  <div id="camera-view">
+    <div class="top-bar">
+      <button id="hide-btn" class="icon-btn" aria-label="ブラウザ画面に戻る">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div id="record-timer" class="hidden">00:00</div>
+      <button id="flash-toggle" class="icon-btn hidden" aria-label="フラッシュ切り替え">
+        <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+      </button>
+    </div>
+
+    <div class="mode-switch">
+      <button id="mode-photo-btn" class="mode-btn active">写真</button>
+      <button id="mode-video-btn" class="mode-btn">ビデオ</button>
+    </div>
+
+    <div class="bottom-bar">
+      <button id="gallery-btn" class="thumb-btn" aria-label="撮影した写真・動画">
+        <span id="thumb-preview"></span>
+      </button>
+
+      <button id="shutter-btn" aria-label="シャッター"></button>
+
+      <button id="switch-camera-btn" class="icon-btn" aria-label="カメラ切り替え">
+        <svg viewBox="0 0 24 24"><path d="M12 5V2L8 6l4 4V7c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 13c0-4.42-3.58-8-8-8zm-6 8c0-1.01.25-1.97.7-2.8L5.24 8.74A7.93 7.93 0 0 0 4 13c0 4.42 3.58 8 8 8v3l4-4-4-4v3c-3.31 0-6-2.69-6-6z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== 偽装ブラウザ画面(既定表示) ====================
+       通常のWebブラウザに見える画面。record-trigger(更新アイコン)をタップすると
+       ビデオ撮影を開始/停止する。住所欄を長押し(0.8秒)すると通常のカメラ操作画面に切り替わる。 -->
+  <div id="disguise-view">
+    <div class="fake-topbar">
+      <div id="disguise-address" class="fake-address">
+        <svg class="fake-lock" viewBox="0 0 24 24"><path d="M6 10V8a6 6 0 1 1 12 0v2h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V11a1 1 0 0 1 1-1h1zm2 0h8V8a4 4 0 1 0-8 0v2z"/></svg>
+        <span>検索、またはWebサイトを入力</span>
+        <span id="disguise-rec-dot"></span>
+      </div>
+      <button id="disguise-record-btn" class="fake-icon-btn" aria-label="更新">
+        <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08a5.99 5.99 0 0 1-5.65 4c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L14 11h7V4l-3.35 2.35z"/></svg>
+      </button>
+    </div>
+    <div class="fake-content">
+      <div class="fake-block fake-block-title"></div>
+      <div class="fake-block fake-block-line"></div>
+      <div class="fake-block fake-block-line short"></div>
+      <div class="fake-card"></div>
+      <div class="fake-card"></div>
+      <div class="fake-block fake-block-line"></div>
+      <div class="fake-block fake-block-line"></div>
+      <div class="fake-block fake-block-line short"></div>
+    </div>
+    <div class="fake-bottombar">
+      <button class="fake-icon-btn" aria-label="戻る"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button class="fake-icon-btn" aria-label="進む"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="fake-icon-btn" aria-label="共有"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5M5 21h14"/></svg></button>
+      <button class="fake-icon-btn" aria-label="ブックマーク"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4V3z"/></svg></button>
+      <button class="fake-icon-btn" aria-label="タブ">1</button>
+    </div>
+  </div>
+
+  <!-- 撮影した写真・動画の一覧 -->
+  <div id="gallery-view" class="hidden">
+    <div class="gallery-header">
+      <button id="gallery-close-btn" class="text-btn">閉じる</button>
+      <span id="gallery-count"></span>
+    </div>
+    <div id="gallery-grid"></div>
+    <p id="gallery-empty" class="hidden">まだ写真・動画がありません</p>
+  </div>
+
+  <!-- 個別の写真・動画のフルスクリーン表示 -->
+  <div id="media-view" class="hidden">
+    <img id="media-view-img" alt="撮影した写真" class="hidden" />
+    <video id="media-view-video" class="hidden" controls playsinline></video>
+    <div class="photo-view-bar">
+      <button id="media-back-btn" class="text-btn">戻る</button>
+      <button id="media-download-btn" class="text-btn">保存</button>
+      <button id="media-delete-btn" class="text-btn danger">削除</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
