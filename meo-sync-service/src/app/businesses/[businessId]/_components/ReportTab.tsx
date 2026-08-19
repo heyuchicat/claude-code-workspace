@@ -1,0 +1,157 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import styles from "../dashboard.module.css";
+import type { GoogleBusinessLocation } from "@/lib/types";
+
+const PREFECTURES = [
+  "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
+  "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
+  "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県",
+  "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県",
+  "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県",
+  "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県",
+  "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県",
+];
+
+export default function ReportTab({ businessId }: { businessId: string }) {
+  const [locations, setLocations] = useState<GoogleBusinessLocation[]>([]);
+  const [locationId, setLocationId] = useState("");
+  const [reportEmail, setReportEmail] = useState("");
+  const [savedEmail, setSavedEmail] = useState<string | null>(null);
+  const [prefecture, setPrefecture] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  const load = useCallback(async () => {
+    const [locationsRes, businessRes] = await Promise.all([
+      fetch(`/api/businesses/${businessId}/google/locations`).then((r) => r.json()),
+      fetch(`/api/businesses/${businessId}`).then((r) => r.json()),
+    ]);
+    setLocations(locationsRes.locations);
+    setLocationId((prev) => prev || locationsRes.locations[0]?.id || "");
+    setReportEmail(businessRes.business?.reportEmail ?? "");
+    setSavedEmail(businessRes.business?.reportEmail ?? null);
+    setPrefecture(businessRes.business?.prefecture ?? "");
+    setLoading(false);
+  }, [businessId]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load();
+  }, [load]);
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      const res = await fetch(`/api/businesses/${businessId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reportEmail, prefecture }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "保存に失敗しました");
+      setSavedEmail(data.business.reportEmail);
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDownload() {
+    if (!locationId) return;
+    setDownloading(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/businesses/${businessId}/report?locationId=${encodeURIComponent(locationId)}`
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "生成に失敗しました");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "monthly-report.pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  if (loading) return <p className={styles.loading}>読み込み中...</p>;
+
+  return (
+    <div>
+      <section className={styles.controls}>
+        <label className={styles.locationSelect}>
+          対象ロケーション:
+          <select value={locationId} onChange={(e) => setLocationId(e.target.value)}>
+            {locations.map((loc) => (
+              <option key={loc.id} value={loc.id}>
+                {loc.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button className={styles.primaryButton} onClick={handleDownload} disabled={downloading}>
+          {downloading ? "生成中...(数秒かかります)" : "PDFレポートをダウンロード"}
+        </button>
+      </section>
+
+      {error && <p className={styles.error}>{error}</p>}
+
+      <form
+        className={styles.scheduleForm}
+        onSubmit={handleSave}
+        style={{ marginTop: 24 }}
+      >
+        <h2 className={styles.sectionTitle}>月次レポートの自動送付</h2>
+        <p className={styles.postMeta}>
+          送付先メールアドレスを設定すると、外部cronから
+          <code>/api/cron/send-monthly-reports</code> を定期実行した際に自動でPDFが送られます
+          (メール送信にはサーバー側でSMTP設定が必要です。README参照)。
+        </p>
+        <input
+          className={styles.input}
+          type="email"
+          placeholder="送付先メールアドレス(未設定なら自動送付しません)"
+          value={reportEmail}
+          onChange={(e) => setReportEmail(e.target.value)}
+        />
+        <label className={styles.postMeta}>
+          都道府県(将来の店舗間ベンチマーク比較機能のために蓄積するのみで、現在のレポートには反映されません)
+        </label>
+        <input
+          className={styles.input}
+          list="prefecture-suggestions"
+          placeholder="例: 東京都"
+          value={prefecture}
+          onChange={(e) => setPrefecture(e.target.value)}
+        />
+        <datalist id="prefecture-suggestions">
+          {PREFECTURES.map((p) => (
+            <option key={p} value={p} />
+          ))}
+        </datalist>
+        {saved && <p className={styles.notice}>保存しました{savedEmail ? `(送付先: ${savedEmail})` : "(自動送付は無効化されました)"}</p>}
+        <button className={styles.primaryButton} disabled={saving}>
+          {saving ? "保存中..." : "保存"}
+        </button>
+      </form>
+    </div>
+  );
+}
