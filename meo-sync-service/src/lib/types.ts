@@ -65,11 +65,16 @@ export type InsightsSummary = {
   locationId: string;
   rangeStart: string;
   rangeEnd: string;
-  views: DailyMetric[]; // 検索/マップでの表示回数
+  views: DailyMetric[]; // 検索+マップの合計表示回数(後方互換用)
+  searchViews: DailyMetric[]; // 検索での閲覧数(日別)
+  mapViews: DailyMetric[]; // マップでの閲覧数(日別)
   searchKeywords: { keyword: string; count: number }[];
   callClicks: number;
   websiteClicks: number;
   directionRequests: number;
+  callClicksDaily: DailyMetric[];
+  websiteClicksDaily: DailyMetric[];
+  directionRequestsDaily: DailyMetric[];
 };
 
 export type ScheduledPost = {

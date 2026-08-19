@@ -25,6 +25,7 @@ model Business {
   reportEmail      String? // 月次レポートの自動送付先(未設定なら送付しない)
   alertEmail       String? // アラート通知のメール送付先(未設定ならメール通知しない)
   slackWebhookUrl  String? // アラート通知用Slack Incoming Webhook URL(未設定なら送らない)
+  prefecture       String? // 都道府県(将来の店舗間ベンチマーク比較用に蓄積のみ。現状レポートには未使用)
   connections      Connection[]
   linkMappings     LinkMapping[]
   scheduledPosts   ScheduledPost[]

@@ -241,6 +241,46 @@ export async function fetchRealGoogleBusinessLocations(
   }));
 }
 
+// AI運用アシスタント(GBPプロフィール診断)のチェックリスト用に、店舗の設定状況だけを取得する。
+// 実際の値は使わず「設定されているか」の真偽のみを見るため、readMaskは必要最小限に絞る。
+export type GbpProfileFields = {
+  hasName: boolean;
+  hasCategory: boolean;
+  hasDescription: boolean;
+  hasAddress: boolean;
+  hasPhone: boolean;
+  hasHours: boolean;
+  hasWebsite: boolean;
+};
+
+export async function fetchRealGbpProfileFields(
+  businessId: string,
+  locationId: string
+): Promise<GbpProfileFields> {
+  const { accessToken } = await getValidGoogleAccessToken(businessId);
+
+  const url = new URL(`${BUSINESS_INFO_BASE}/${locationId}`);
+  url.searchParams.set(
+    "readMask",
+    "title,categories,profile,storefrontAddress,phoneNumbers,regularHours,websiteUri"
+  );
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!res.ok) {
+    throw new Error(`GBPプロフィール取得に失敗しました: ${await res.text()}`);
+  }
+  const data = await res.json();
+
+  return {
+    hasName: Boolean(data.title?.trim()),
+    hasCategory: Boolean(data.categories?.primaryCategory?.displayName),
+    hasDescription: Boolean(data.profile?.description?.trim()),
+    hasAddress: Boolean(data.storefrontAddress?.addressLines?.length),
+    hasPhone: Boolean(data.phoneNumbers?.primaryPhone),
+    hasHours: Boolean(data.regularHours?.periods?.length),
+    hasWebsite: Boolean(data.websiteUri),
+  };
+}
+
 function toGoogleBusinessPost(
   raw: { name: string; summary?: string; createTime?: string; state?: string; media?: { googleUrl?: string }[] },
   locationId: string,

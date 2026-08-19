@@ -21,7 +21,7 @@ export async function PATCH(
   const body = await request.json().catch(() => null);
 
   const input: Record<string, string | null> = {};
-  for (const key of ["reportEmail", "alertEmail", "slackWebhookUrl"] as const) {
+  for (const key of ["reportEmail", "alertEmail", "slackWebhookUrl", "prefecture"] as const) {
     if (key in (body ?? {})) {
       const value = body[key];
       input[key] = typeof value === "string" && value.trim() !== "" ? value.trim() : null;

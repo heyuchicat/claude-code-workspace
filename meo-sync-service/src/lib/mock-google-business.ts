@@ -43,6 +43,31 @@ export async function fetchGoogleBusinessLocations(): Promise<
   return MOCK_LOCATIONS;
 }
 
+export type MockGbpProfileFields = {
+  hasName: boolean;
+  hasCategory: boolean;
+  hasDescription: boolean;
+  hasAddress: boolean;
+  hasPhone: boolean;
+  hasHours: boolean;
+  hasWebsite: boolean;
+};
+
+// AI運用アシスタント診断のデモ用ダミーデータ。あえて一部を未設定にして、
+// デモ画面で✕判定がどう表示されるか確認できるようにしている。
+export async function fetchGbpProfileFields(): Promise<MockGbpProfileFields> {
+  await delay(100);
+  return {
+    hasName: true,
+    hasCategory: true,
+    hasDescription: false,
+    hasAddress: true,
+    hasPhone: true,
+    hasHours: true,
+    hasWebsite: false,
+  };
+}
+
 export type CreateGoogleBusinessPostInput = {
   locationId: string;
   summary: string;

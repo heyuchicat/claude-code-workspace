@@ -7,6 +7,7 @@ export type Business = {
   reportEmail: string | null;
   alertEmail: string | null;
   slackWebhookUrl: string | null;
+  prefecture: string | null;
 };
 
 function toBusiness(row: {
@@ -16,6 +17,7 @@ function toBusiness(row: {
   reportEmail: string | null;
   alertEmail: string | null;
   slackWebhookUrl: string | null;
+  prefecture: string | null;
 }): Business {
   return {
     id: row.id,
@@ -24,6 +26,7 @@ function toBusiness(row: {
     reportEmail: row.reportEmail,
     alertEmail: row.alertEmail,
     slackWebhookUrl: row.slackWebhookUrl,
+    prefecture: row.prefecture,
   };
 }
 
@@ -49,7 +52,7 @@ export async function deleteBusiness(id: string): Promise<void> {
 
 export async function updateBusinessSettings(
   id: string,
-  input: Partial<Pick<Business, "reportEmail" | "alertEmail" | "slackWebhookUrl">>
+  input: Partial<Pick<Business, "reportEmail" | "alertEmail" | "slackWebhookUrl" | "prefecture">>
 ): Promise<Business> {
   const row = await prisma.business.update({ where: { id }, data: input });
   return toBusiness(row);

@@ -132,12 +132,13 @@ export async function replyToReview(
 
 export async function fetchInsights(
   businessId: string,
-  locationId: string
+  locationId: string,
+  days?: number
 ): Promise<InsightsSummary> {
   if (await isConnected(businessId, "google")) {
-    return realInsights.fetchRealInsights(businessId, locationId);
+    return realInsights.fetchRealInsights(businessId, locationId, days);
   }
-  return mockInsights.fetchInsights(locationId);
+  return mockInsights.fetchInsights(locationId, days);
 }
 
 export async function fetchQA(
@@ -194,6 +195,13 @@ export async function deleteProduct(
   } else {
     await mockProducts.deleteProduct(productId);
   }
+}
+
+export async function fetchGbpProfileFields(businessId: string, locationId: string) {
+  if (await isConnected(businessId, "google")) {
+    return realGoogle.fetchRealGbpProfileFields(businessId, locationId);
+  }
+  return mockGoogle.fetchGbpProfileFields();
 }
 
 export async function getConnectionStatus(businessId: string) {

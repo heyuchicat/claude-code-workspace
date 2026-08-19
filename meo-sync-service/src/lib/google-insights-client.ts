@@ -8,12 +8,15 @@ import { getValidGoogleAccessToken } from "./google-business-client";
 
 const PERFORMANCE_BASE = "https://businessprofileperformance.googleapis.com/v1";
 
-const IMPRESSION_METRICS = [
+const MAP_IMPRESSION_METRICS = [
   "BUSINESS_IMPRESSIONS_DESKTOP_MAPS",
-  "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH",
   "BUSINESS_IMPRESSIONS_MOBILE_MAPS",
+];
+const SEARCH_IMPRESSION_METRICS = [
+  "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH",
   "BUSINESS_IMPRESSIONS_MOBILE_SEARCH",
 ];
+const IMPRESSION_METRICS = [...MAP_IMPRESSION_METRICS, ...SEARCH_IMPRESSION_METRICS];
 const ACTION_METRICS = [
   "CALL_CLICKS",
   "WEBSITE_CLICKS",
@@ -34,7 +37,7 @@ type DailyMetricTimeSeries = {
 export async function fetchRealInsights(
   businessId: string,
   locationId: string,
-  days = 14
+  days = 180
 ): Promise<InsightsSummary> {
   const { accessToken } = await getValidGoogleAccessToken(businessId);
 
@@ -66,31 +69,51 @@ export async function fetchRealInsights(
   const series = (data.multiDailyMetricTimeSeries?.[0]?.dailyMetricTimeSeries ??
     []) as DailyMetricTimeSeries[];
 
-  const viewsByDate = new Map<string, number>();
-  let callClicks = 0;
-  let websiteClicks = 0;
-  let directionRequests = 0;
+  const searchByDate = new Map<string, number>();
+  const mapByDate = new Map<string, number>();
+  const callByDate = new Map<string, number>();
+  const websiteByDate = new Map<string, number>();
+  const directionByDate = new Map<string, number>();
+
+  const addTo = (map: Map<string, number>, date: string, value: number) => {
+    map.set(date, (map.get(date) ?? 0) + value);
+  };
 
   for (const metricSeries of series) {
     for (const dv of metricSeries.timeSeries?.datedValues ?? []) {
       const dateStr = `${dv.date.year}-${String(dv.date.month).padStart(2, "0")}-${String(dv.date.day).padStart(2, "0")}`;
       const value = Number(dv.value ?? 0);
 
-      if (IMPRESSION_METRICS.includes(metricSeries.dailyMetric)) {
-        viewsByDate.set(dateStr, (viewsByDate.get(dateStr) ?? 0) + value);
+      if (SEARCH_IMPRESSION_METRICS.includes(metricSeries.dailyMetric)) {
+        addTo(searchByDate, dateStr, value);
+      } else if (MAP_IMPRESSION_METRICS.includes(metricSeries.dailyMetric)) {
+        addTo(mapByDate, dateStr, value);
       } else if (metricSeries.dailyMetric === "CALL_CLICKS") {
-        callClicks += value;
+        addTo(callByDate, dateStr, value);
       } else if (metricSeries.dailyMetric === "WEBSITE_CLICKS") {
-        websiteClicks += value;
+        addTo(websiteByDate, dateStr, value);
       } else if (metricSeries.dailyMetric === "BUSINESS_DIRECTION_REQUESTS") {
-        directionRequests += value;
+        addTo(directionByDate, dateStr, value);
       }
     }
   }
 
-  const views: DailyMetric[] = [...viewsByDate.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, value]) => ({ date, value }));
+  const toSeries = (map: Map<string, number>): DailyMetric[] =>
+    [...map.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({ date, value }));
+
+  const searchViews = toSeries(searchByDate);
+  const mapViews = toSeries(mapByDate);
+  const callClicksDaily = toSeries(callByDate);
+  const websiteClicksDaily = toSeries(websiteByDate);
+  const directionRequestsDaily = toSeries(directionByDate);
+
+  const allDates = [...new Set([...searchByDate.keys(), ...mapByDate.keys()])].sort();
+  const views: DailyMetric[] = allDates.map((date) => ({
+    date,
+    value: (searchByDate.get(date) ?? 0) + (mapByDate.get(date) ?? 0),
+  }));
+
+  const sum = (arr: DailyMetric[]) => arr.reduce((s, v) => s + v.value, 0);
 
   const keywordsUrl = new URL(
     `${PERFORMANCE_BASE}/${locationId}/searchkeywords/impressions/monthly`
@@ -114,11 +137,16 @@ export async function fetchRealInsights(
     rangeStart: views[0]?.date ?? "",
     rangeEnd: views[views.length - 1]?.date ?? "",
     views,
+    searchViews,
+    mapViews,
     searchKeywords: searchKeywords
       .sort((a, b) => b.count - a.count)
-      .slice(0, 10),
-    callClicks,
-    websiteClicks,
-    directionRequests,
+      .slice(0, 20),
+    callClicks: sum(callClicksDaily),
+    websiteClicks: sum(websiteClicksDaily),
+    directionRequests: sum(directionRequestsDaily),
+    callClicksDaily,
+    websiteClicksDaily,
+    directionRequestsDaily,
   };
 }
