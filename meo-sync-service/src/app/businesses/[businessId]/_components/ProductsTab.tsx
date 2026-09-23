@@ -3,8 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import styles from "../dashboard.module.css";
 import type { BusinessProduct, GoogleBusinessLocation } from "@/lib/types";
+import { pickDefaultLocationId } from "@/lib/location-match";
 
-export default function ProductsTab({ businessId }: { businessId: string }) {
+export default function ProductsTab({
+  businessId,
+  businessName,
+}: {
+  businessId: string;
+  businessName: string;
+}) {
   const [locations, setLocations] = useState<GoogleBusinessLocation[]>([]);
   const [locationId, setLocationId] = useState("");
   const [products, setProducts] = useState<BusinessProduct[]>([]);
@@ -25,8 +32,8 @@ export default function ProductsTab({ businessId }: { businessId: string }) {
     const res = await fetch(`/api/businesses/${businessId}/google/locations`);
     const data = await res.json();
     setLocations(data.locations);
-    setLocationId((prev) => prev || data.locations[0]?.id || "");
-  }, [businessId]);
+    setLocationId((prev) => prev || pickDefaultLocationId(data.locations, businessName));
+  }, [businessId, businessName]);
 
   const loadProducts = useCallback(async () => {
     if (!locationId) return;

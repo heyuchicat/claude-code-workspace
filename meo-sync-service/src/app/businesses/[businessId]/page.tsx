@@ -98,16 +98,16 @@ function Dashboard({ businessId }: { businessId: string }) {
         ))}
       </nav>
 
-      {tab === "sync" && <SyncTab businessId={businessId} />}
-      {tab === "reviews" && <ReviewsTab businessId={businessId} />}
-      {tab === "insights" && <InsightsTab businessId={businessId} />}
-      {tab === "scheduled" && <ScheduledPostsTab businessId={businessId} />}
-      {tab === "qa" && <QATab businessId={businessId} />}
-      {tab === "products" && <ProductsTab businessId={businessId} />}
-      {tab === "rank" && <RankCheckTab businessId={businessId} />}
-      {tab === "reviewRequest" && <ReviewRequestTab businessId={businessId} />}
-      {tab === "competitors" && <CompetitorsTab businessId={businessId} />}
-      {tab === "report" && <ReportTab businessId={businessId} />}
+      {tab === "sync" && <SyncTab businessId={businessId} businessName={businessName} />}
+      {tab === "reviews" && <ReviewsTab businessId={businessId} businessName={businessName} />}
+      {tab === "insights" && <InsightsTab businessId={businessId} businessName={businessName} />}
+      {tab === "scheduled" && <ScheduledPostsTab businessId={businessId} businessName={businessName} />}
+      {tab === "qa" && <QATab businessId={businessId} businessName={businessName} />}
+      {tab === "products" && <ProductsTab businessId={businessId} businessName={businessName} />}
+      {tab === "rank" && <RankCheckTab businessId={businessId} businessName={businessName} />}
+      {tab === "reviewRequest" && <ReviewRequestTab businessId={businessId} businessName={businessName} />}
+      {tab === "competitors" && <CompetitorsTab businessId={businessId} businessName={businessName} />}
+      {tab === "report" && <ReportTab businessId={businessId} businessName={businessName} />}
       {tab === "notifications" && <NotificationSettingsTab businessId={businessId} />}
       {tab === "externalListings" && <ExternalListingsTab businessId={businessId} />}
     </main>

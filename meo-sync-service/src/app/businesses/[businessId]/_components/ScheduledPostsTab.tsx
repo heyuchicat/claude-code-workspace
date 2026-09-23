@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import styles from "../dashboard.module.css";
 import type { GoogleBusinessLocation, ScheduledPost } from "@/lib/types";
+import { pickDefaultLocationId } from "@/lib/location-match";
 
 const STATUS_LABEL: Record<ScheduledPost["status"], string> = {
   PENDING: "予約中",
@@ -10,7 +11,13 @@ const STATUS_LABEL: Record<ScheduledPost["status"], string> = {
   FAILED: "失敗",
 };
 
-export default function ScheduledPostsTab({ businessId }: { businessId: string }) {
+export default function ScheduledPostsTab({
+  businessId,
+  businessName,
+}: {
+  businessId: string;
+  businessName: string;
+}) {
   const [locations, setLocations] = useState<GoogleBusinessLocation[]>([]);
   const [posts, setPosts] = useState<ScheduledPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,10 +38,10 @@ export default function ScheduledPostsTab({ businessId }: { businessId: string }
       fetch(`/api/businesses/${businessId}/scheduled-posts`).then((r) => r.json()),
     ]);
     setLocations(locationsRes.locations);
-    setLocationId((prev) => prev || locationsRes.locations[0]?.id || "");
+    setLocationId((prev) => prev || pickDefaultLocationId(locationsRes.locations, businessName));
     setPosts(postsRes.posts);
     setLoading(false);
-  }, [businessId]);
+  }, [businessId, businessName]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

@@ -9,6 +9,7 @@ import {
   InstagramPost,
   LinkMapping,
 } from "@/lib/types";
+import { pickDefaultLocationId } from "@/lib/location-match";
 
 type PostWithLink = InstagramPost & { link: LinkMapping | null };
 
@@ -17,7 +18,13 @@ type ConnectionStatus = {
   google: { connected: true; label: string } | { connected: false };
 };
 
-export default function SyncTab({ businessId }: { businessId: string }) {
+export default function SyncTab({
+  businessId,
+  businessName,
+}: {
+  businessId: string;
+  businessName: string;
+}) {
   const [status, setStatus] = useState<ConnectionStatus | null>(null);
   const [account, setAccount] = useState<InstagramAccount | null>(null);
   const [locations, setLocations] = useState<GoogleBusinessLocation[]>([]);
@@ -46,9 +53,9 @@ export default function SyncTab({ businessId }: { businessId: string }) {
     setLocations(locationsRes.locations);
     setPosts(postsRes.posts);
     setGooglePosts(googlePostsRes.posts);
-    setLocationId((prev) => prev || locationsRes.locations[0]?.id || "");
+    setLocationId((prev) => prev || pickDefaultLocationId(locationsRes.locations, businessName));
     setLoading(false);
-  }, [businessId]);
+  }, [businessId, businessName]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

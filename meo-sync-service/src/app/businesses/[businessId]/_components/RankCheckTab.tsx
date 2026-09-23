@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import styles from "../dashboard.module.css";
 import type { GoogleBusinessLocation, RankCheckResult } from "@/lib/types";
+import { pickDefaultLocationId } from "@/lib/location-match";
 
 type TrackedKeyword = {
   id: string;
@@ -47,7 +48,13 @@ function RankTrendChart({ results }: { results: RankCheckResult[] }) {
   );
 }
 
-export default function RankCheckTab({ businessId }: { businessId: string }) {
+export default function RankCheckTab({
+  businessId,
+  businessName: appBusinessName,
+}: {
+  businessId: string;
+  businessName: string;
+}) {
   const [locations, setLocations] = useState<GoogleBusinessLocation[]>([]);
   const [locationId, setLocationId] = useState("");
   const [businessName, setBusinessName] = useState("");
@@ -63,9 +70,10 @@ export default function RankCheckTab({ businessId }: { businessId: string }) {
     const res = await fetch(`/api/businesses/${businessId}/google/locations`);
     const data = await res.json();
     setLocations(data.locations);
-    setLocationId((prev) => prev || data.locations[0]?.id || "");
-    setBusinessName((prev) => prev || data.locations[0]?.name || "");
-  }, [businessId]);
+    const defaultId = pickDefaultLocationId(data.locations, appBusinessName);
+    setLocationId((prev) => prev || defaultId);
+    setBusinessName((prev) => prev || data.locations.find((l: GoogleBusinessLocation) => l.id === defaultId)?.name || "");
+  }, [businessId, appBusinessName]);
 
   const loadResults = useCallback(async () => {
     if (!locationId) return;

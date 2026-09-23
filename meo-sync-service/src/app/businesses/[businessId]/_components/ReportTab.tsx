@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import styles from "../dashboard.module.css";
 import type { GoogleBusinessLocation } from "@/lib/types";
+import { pickDefaultLocationId } from "@/lib/location-match";
 
 const PREFECTURES = [
   "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
@@ -14,7 +15,13 @@ const PREFECTURES = [
   "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県",
 ];
 
-export default function ReportTab({ businessId }: { businessId: string }) {
+export default function ReportTab({
+  businessId,
+  businessName,
+}: {
+  businessId: string;
+  businessName: string;
+}) {
   const [locations, setLocations] = useState<GoogleBusinessLocation[]>([]);
   const [locationId, setLocationId] = useState("");
   const [reportEmail, setReportEmail] = useState("");
@@ -32,12 +39,12 @@ export default function ReportTab({ businessId }: { businessId: string }) {
       fetch(`/api/businesses/${businessId}`).then((r) => r.json()),
     ]);
     setLocations(locationsRes.locations);
-    setLocationId((prev) => prev || locationsRes.locations[0]?.id || "");
+    setLocationId((prev) => prev || pickDefaultLocationId(locationsRes.locations, businessName));
     setReportEmail(businessRes.business?.reportEmail ?? "");
     setSavedEmail(businessRes.business?.reportEmail ?? null);
     setPrefecture(businessRes.business?.prefecture ?? "");
     setLoading(false);
-  }, [businessId]);
+  }, [businessId, businessName]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

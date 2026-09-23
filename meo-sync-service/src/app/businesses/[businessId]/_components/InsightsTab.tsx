@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import styles from "../dashboard.module.css";
 import type { GoogleBusinessLocation, InsightsSummary } from "@/lib/types";
+import { pickDefaultLocationId } from "@/lib/location-match";
 
 function ViewsChart({ views }: { views: InsightsSummary["views"] }) {
   const max = Math.max(1, ...views.map((v) => v.value));
@@ -35,7 +36,13 @@ function ViewsChart({ views }: { views: InsightsSummary["views"] }) {
   );
 }
 
-export default function InsightsTab({ businessId }: { businessId: string }) {
+export default function InsightsTab({
+  businessId,
+  businessName,
+}: {
+  businessId: string;
+  businessName: string;
+}) {
   const [locations, setLocations] = useState<GoogleBusinessLocation[]>([]);
   const [locationId, setLocationId] = useState("");
   const [insights, setInsights] = useState<InsightsSummary | null>(null);
@@ -45,8 +52,8 @@ export default function InsightsTab({ businessId }: { businessId: string }) {
     const res = await fetch(`/api/businesses/${businessId}/google/locations`);
     const data = await res.json();
     setLocations(data.locations);
-    setLocationId((prev) => prev || data.locations[0]?.id || "");
-  }, [businessId]);
+    setLocationId((prev) => prev || pickDefaultLocationId(data.locations, businessName));
+  }, [businessId, businessName]);
 
   const loadInsights = useCallback(async () => {
     if (!locationId) return;
