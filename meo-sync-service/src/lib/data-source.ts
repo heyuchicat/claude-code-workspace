@@ -3,6 +3,8 @@
 // 未接続ならデモ用のmockデータを使う。すべて店舗(businessId)単位。
 
 import { getConnection } from "./connections";
+import { getBusiness } from "./businesses";
+import { filterMatchingLocations } from "./location-match";
 import { BusinessProduct, GoogleBusinessLocation, GoogleBusinessPost, GoogleReview, InsightsSummary, InstagramAccount, InstagramPost, QAEntry } from "./types";
 import * as mockInstagram from "./mock-instagram";
 import * as mockGoogle from "./mock-google-business";
@@ -63,7 +65,12 @@ export async function fetchGoogleBusinessLocations(
   businessId: string
 ): Promise<GoogleBusinessLocation[]> {
   if (await isConnected(businessId, "google")) {
-    return realGoogle.fetchRealGoogleBusinessLocations(businessId);
+    const locations = await realGoogle.fetchRealGoogleBusinessLocations(businessId);
+    // 代理店が複数の顧客を同じGoogleアカウントで管理している場合、
+    // 他の顧客のロケーションがこの店舗の画面に見えてしまわないよう、
+    // 店舗名で一致するものだけに絞り込む。
+    const business = await getBusiness(businessId);
+    return filterMatchingLocations(locations, business?.name ?? "");
   }
   return mockGoogle.fetchGoogleBusinessLocations();
 }
