@@ -1,0 +1,126 @@
+.main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.loading {
+  padding: 80px 0;
+  text-align: center;
+  opacity: 0.7;
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.headerRow h1 {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin-top: 6px;
+  opacity: 0.7;
+  font-size: 14px;
+}
+
+.logoutButton {
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  background: transparent;
+  color: inherit;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.error {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  font-size: 14px;
+}
+
+.businessGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.businessCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(128, 128, 128, 0.25);
+  border-radius: 12px;
+  padding: 4px 4px 4px 18px;
+}
+
+.businessLink {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0;
+}
+
+.businessName {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.businessMeta {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.deleteButton {
+  border: none;
+  background: none;
+  color: #dc2626;
+  opacity: 0.7;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 10px 14px;
+}
+
+.createForm {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+}
+
+.primaryButton {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #111827;
+  color: #fff;
+}
+
+.primaryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

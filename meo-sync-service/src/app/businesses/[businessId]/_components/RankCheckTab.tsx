@@ -1,0 +1,402 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import styles from "../dashboard.module.css";
+import type { GoogleBusinessLocation, RankCheckResult } from "@/lib/types";
+import { pickDefaultLocationId } from "@/lib/location-match";
+
+type TrackedKeyword = {
+  id: string;
+  locationId: string;
+  keyword: string;
+  businessNameMatch: string;
+};
+
+function RankTrendChart({ results }: { results: RankCheckResult[] }) {
+  const ordered = [...results].reverse(); // 古い→新しい
+  const width = 480;
+  const height = 100;
+  const barGap = 4;
+  const barWidth = ordered.length > 0 ? width / ordered.length - barGap : 0;
+  const worst = 20; // 圏外扱いの基準(表示用)
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className={styles.chartSvg} style={{ height: 100 }}>
+      {ordered.map((r, i) => {
+        const rank = r.rank ?? worst;
+        const barHeight = ((worst - rank + 1) / worst) * (height - 16);
+        const x = i * (barWidth + barGap);
+        const y = height - barHeight - 12;
+        return (
+          <g key={r.id}>
+            <rect
+              x={x}
+              y={y}
+              width={barWidth}
+              height={barHeight}
+              rx={2}
+              fill={r.rank ? "#2563eb" : "#cbd5e1"}
+              opacity={0.85}
+            />
+            <text x={x + barWidth / 2} y={height - 2} textAnchor="middle" fontSize="7" fill="currentColor" opacity={0.6}>
+              {r.rank ?? "―"}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+export default function RankCheckTab({
+  businessId,
+  businessName: appBusinessName,
+}: {
+  businessId: string;
+  businessName: string;
+}) {
+  const [locations, setLocations] = useState<GoogleBusinessLocation[]>([]);
+  const [locationId, setLocationId] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [keyword, setKeyword] = useState("");
+  const [results, setResults] = useState<RankCheckResult[]>([]);
+  const [trackedKeywords, setTrackedKeywords] = useState<TrackedKeyword[]>([]);
+  const [suggestions, setSuggestions] = useState<{ keyword: string; count: number }[]>([]);
+  const [adsConnected, setAdsConnected] = useState(false);
+  const [adKeywords, setAdKeywords] = useState<
+    { id: string; keyword: string; matchType: string | null }[]
+  >([]);
+  const [syncingAds, setSyncingAds] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [starting, setStarting] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadLocations = useCallback(async () => {
+    const res = await fetch(`/api/businesses/${businessId}/google/locations`);
+    const data = await res.json();
+    setLocations(data.locations);
+    const defaultId = pickDefaultLocationId(data.locations, appBusinessName);
+    setLocationId((prev) => prev || defaultId);
+    setBusinessName((prev) => prev || data.locations.find((l: GoogleBusinessLocation) => l.id === defaultId)?.name || "");
+  }, [businessId, appBusinessName]);
+
+  const loadResults = useCallback(async () => {
+    if (!locationId) return;
+    setLoading(true);
+    const res = await fetch(
+      `/api/businesses/${businessId}/rank-checks?locationId=${encodeURIComponent(locationId)}`
+    );
+    const data = await res.json();
+    setResults(data.results ?? []);
+    setLoading(false);
+  }, [businessId, locationId]);
+
+  const loadTrackedKeywords = useCallback(async () => {
+    const res = await fetch(`/api/businesses/${businessId}/tracked-keywords`);
+    const data = await res.json();
+    setTrackedKeywords(data.keywords ?? []);
+  }, [businessId]);
+
+  const loadSuggestions = useCallback(async () => {
+    if (!locationId) return;
+    const res = await fetch(
+      `/api/businesses/${businessId}/tracked-keywords/suggestions?locationId=${encodeURIComponent(locationId)}`
+    );
+    const data = await res.json();
+    setSuggestions(data.suggestions ?? []);
+  }, [businessId, locationId]);
+
+  const loadAdStatus = useCallback(async () => {
+    const [statusRes, keywordsRes] = await Promise.all([
+      fetch(`/api/businesses/${businessId}/auth/status`),
+      fetch(`/api/businesses/${businessId}/ad-keywords`),
+    ]);
+    const statusData = await statusRes.json();
+    const keywordsData = await keywordsRes.json();
+    setAdsConnected(Boolean(statusData.googleAds?.connected));
+    setAdKeywords(keywordsData.keywords ?? []);
+  }, [businessId]);
+
+  async function handleSyncAdKeywords() {
+    setSyncingAds(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/businesses/${businessId}/ad-keywords`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "広告キーワードの取得に失敗しました");
+      setAdKeywords(data.keywords ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSyncingAds(false);
+    }
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadLocations();
+    loadTrackedKeywords();
+    loadAdStatus();
+  }, [loadLocations, loadTrackedKeywords, loadAdStatus]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadSuggestions();
+  }, [loadSuggestions]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadResults();
+  }, [loadResults]);
+
+  // キーワードの追跡登録(未登録の場合のみ)と、その場での初回チェックを1操作でまとめて行う。
+  // 以降の定期チェックはアプリ起動中、内蔵スケジューラが自動で行う(cron設定は不要)。
+  async function startTracking(targetKeyword: string) {
+    if (!targetKeyword.trim()) return;
+    setStarting(targetKeyword);
+    setError(null);
+    try {
+      const alreadyTracked = trackedKeywords.some(
+        (k) => k.keyword === targetKeyword && k.locationId === locationId
+      );
+      if (!alreadyTracked) {
+        const res = await fetch(`/api/businesses/${businessId}/tracked-keywords`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ locationId, keyword: targetKeyword, businessNameMatch: businessName }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "登録に失敗しました");
+        await loadTrackedKeywords();
+      }
+
+      const checkRes = await fetch(`/api/businesses/${businessId}/rank-checks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locationId, keyword: targetKeyword, businessName }),
+      });
+      const checkData = await checkRes.json();
+      if (!checkRes.ok) throw new Error(checkData.error ?? "順位チェックに失敗しました");
+      await Promise.all([loadResults(), loadSuggestions()]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setStarting(null);
+    }
+  }
+
+  function handleStartTracking(e: React.FormEvent) {
+    e.preventDefault();
+    startTracking(keyword);
+  }
+
+  async function handleRemoveKeyword(id: string) {
+    await fetch(`/api/businesses/${businessId}/tracked-keywords/${id}`, { method: "DELETE" });
+    await loadTrackedKeywords();
+  }
+
+  const resultsByKeyword = new Map<string, RankCheckResult[]>();
+  for (const r of results) {
+    const list = resultsByKeyword.get(r.keyword) ?? [];
+    list.push(r);
+    resultsByKeyword.set(r.keyword, list);
+  }
+
+  return (
+    <div>
+      <p className={styles.riskBanner}>
+        ⚠ この機能は実験的です。Googleマップの検索結果ページを自動取得して順位を推定しており、
+        Googleの利用規約に抵触する可能性があります。公式APIではないため精度・安定性は保証されません。
+        頻繁な実行はアカウント/IPブロックの原因になります。自己責任でご利用ください。
+      </p>
+
+      <form className={styles.scheduleForm} onSubmit={handleStartTracking}>
+        <h2 className={styles.sectionTitle}>キーワードの追跡を始める</h2>
+        <label className={styles.locationSelect}>
+          対象ロケーション:
+          <select value={locationId} onChange={(e) => setLocationId(e.target.value)}>
+            {locations.map((loc) => (
+              <option key={loc.id} value={loc.id}>
+                {loc.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <input
+          className={styles.input}
+          placeholder="店舗名(検索結果内で照合する名前)"
+          value={businessName}
+          onChange={(e) => setBusinessName(e.target.value)}
+          required
+        />
+        <input
+          className={styles.input}
+          placeholder="検索キーワード(例: カフェ 渋谷)"
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          required
+        />
+        {error && <p className={styles.error}>{error}</p>}
+        <button className={styles.primaryButton} disabled={starting !== null}>
+          {starting ? "確認中...(最大20秒程度)" : "追跡を始めて今すぐ調べる"}
+        </button>
+      </form>
+
+      <section>
+        <h2 className={styles.sectionTitle}>キーワード候補</h2>
+        <p className={styles.postMeta}>
+          実際にお客様がこの店舗を検索で見つけた際に使ったキーワード(公式インサイトデータ)です。
+          クリックするとそのまま追跡を開始します。
+        </p>
+        <div className={styles.keywordList}>
+          {suggestions.length === 0 && (
+            <p className={styles.emptyState}>候補はまだありません。</p>
+          )}
+          {suggestions.map((s) => (
+            <button
+              key={s.keyword}
+              type="button"
+              className={styles.keywordRow}
+              onClick={() => startTracking(s.keyword)}
+              disabled={starting !== null || !businessName.trim()}
+              style={{
+                background: "none",
+                font: "inherit",
+                textAlign: "left",
+                width: "100%",
+                cursor: starting !== null || !businessName.trim() ? "default" : "pointer",
+              }}
+            >
+              <span>{starting === s.keyword ? "確認中..." : s.keyword}</span>
+              <span className={styles.keywordCount}>{s.count}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className={styles.sectionTitle}>広告キーワードから追加</h2>
+        {adsConnected ? (
+          <>
+            <p className={styles.postMeta}>
+              Google Adsで入札設定している検索キーワードです。クリックすると追跡を開始します。
+            </p>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={handleSyncAdKeywords}
+              disabled={syncingAds}
+              style={{ marginBottom: 8 }}
+            >
+              {syncingAds ? "更新中..." : "Google Adsから最新のキーワードを取得"}
+            </button>
+            <div className={styles.keywordList}>
+              {adKeywords.filter((k) => !trackedKeywords.some((t) => t.keyword === k.keyword))
+                .length === 0 && (
+                <p className={styles.emptyState}>
+                  候補はありません。「Google Adsから最新のキーワードを取得」を押してください。
+                </p>
+              )}
+              {adKeywords
+                .filter((k) => !trackedKeywords.some((t) => t.keyword === k.keyword))
+                .map((k) => (
+                  <button
+                    key={k.id}
+                    type="button"
+                    className={styles.keywordRow}
+                    onClick={() => startTracking(k.keyword)}
+                    disabled={starting !== null || !businessName.trim()}
+                    style={{
+                      background: "none",
+                      font: "inherit",
+                      textAlign: "left",
+                      width: "100%",
+                      cursor: starting !== null || !businessName.trim() ? "default" : "pointer",
+                    }}
+                  >
+                    <span>{starting === k.keyword ? "確認中..." : k.keyword}</span>
+                    {k.matchType && <span className={styles.keywordCount}>{k.matchType}</span>}
+                  </button>
+                ))}
+            </div>
+          </>
+        ) : (
+          <div className={styles.accountCard}>
+            <span className={styles.accountLabel}>Google Ads</span>
+            <p className={styles.postMeta}>
+              広告で使っているキーワードを自動で候補に追加できます。Google Ads APIは
+              別途アクセス申請・開発者トークンの取得が必要です(README参照)。
+            </p>
+            <a
+              className={styles.connectButton}
+              href={`/api/auth/google-ads/start?businessId=${businessId}`}
+            >
+              Google Adsを連携する
+            </a>
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className={styles.sectionTitle}>追跡中のキーワード</h2>
+        <p className={styles.postMeta}>
+          アプリを起動している間、自動で1日1回チェックします(追加の設定は不要です)。
+        </p>
+        <div className={styles.rankList}>
+          {trackedKeywords.length === 0 && (
+            <p className={styles.emptyState}>登録済みのキーワードはありません。</p>
+          )}
+          {trackedKeywords.map((k) => (
+            <div key={k.id} className={styles.rankRow}>
+              <span className={styles.postCaption}>{k.keyword}</span>
+              <span className={styles.postMeta}>照合名: {k.businessNameMatch}</span>
+              <button className={styles.linkButton} onClick={() => handleRemoveKeyword(k.id)}>
+                削除
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className={styles.sectionTitle}>キーワード別の推移</h2>
+        {loading ? (
+          <p className={styles.loading}>読み込み中...</p>
+        ) : resultsByKeyword.size === 0 ? (
+          <p className={styles.emptyState}>まだチェック履歴はありません。</p>
+        ) : (
+          [...resultsByKeyword.entries()].map(([kw, list]) => (
+            <div key={kw} className={styles.chartCard} style={{ marginBottom: 12 }}>
+              <p className={styles.postCaption}><strong>{kw}</strong></p>
+              <RankTrendChart results={list.slice(0, 14)} />
+            </div>
+          ))
+        )}
+      </section>
+
+      <section>
+        <h2 className={styles.sectionTitle}>チェック履歴(全件)</h2>
+        {loading ? (
+          <p className={styles.loading}>読み込み中...</p>
+        ) : (
+          <div className={styles.rankList}>
+            {results.length === 0 && (
+              <p className={styles.emptyState}>まだチェック履歴はありません。</p>
+            )}
+            {results.map((r) => (
+              <div key={r.id} className={styles.rankRow}>
+                <span className={styles.postCaption}>{r.keyword}</span>
+                <span className={styles.rankValue}>
+                  {r.rank ? `${r.rank}位` : "圏外(未検出)"}
+                </span>
+                <span className={styles.postMeta}>
+                  {new Date(r.checkedAt).toLocaleString("ja-JP")}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
