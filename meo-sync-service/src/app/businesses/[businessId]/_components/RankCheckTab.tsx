@@ -62,8 +62,7 @@ export default function RankCheckTab({
   const [results, setResults] = useState<RankCheckResult[]>([]);
   const [trackedKeywords, setTrackedKeywords] = useState<TrackedKeyword[]>([]);
   const [loading, setLoading] = useState(true);
-  const [checking, setChecking] = useState(false);
-  const [registering, setRegistering] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadLocations = useCallback(async () => {
@@ -103,43 +102,39 @@ export default function RankCheckTab({
     loadResults();
   }, [loadResults]);
 
-  async function handleCheck(e: React.FormEvent) {
+  // キーワードの追跡登録(未登録の場合のみ)と、その場での初回チェックを1操作でまとめて行う。
+  // 以降の定期チェックはアプリ起動中、内蔵スケジューラが自動で行う(cron設定は不要)。
+  async function handleStartTracking(e: React.FormEvent) {
     e.preventDefault();
-    setChecking(true);
+    setStarting(true);
     setError(null);
     try {
-      const res = await fetch(`/api/businesses/${businessId}/rank-checks`, {
+      const alreadyTracked = trackedKeywords.some(
+        (k) => k.keyword === keyword && k.locationId === locationId
+      );
+      if (!alreadyTracked) {
+        const res = await fetch(`/api/businesses/${businessId}/tracked-keywords`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ locationId, keyword, businessNameMatch: businessName }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "登録に失敗しました");
+        await loadTrackedKeywords();
+      }
+
+      const checkRes = await fetch(`/api/businesses/${businessId}/rank-checks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ locationId, keyword, businessName }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "順位チェックに失敗しました");
+      const checkData = await checkRes.json();
+      if (!checkRes.ok) throw new Error(checkData.error ?? "順位チェックに失敗しました");
       await loadResults();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setChecking(false);
-    }
-  }
-
-  async function handleRegisterKeyword() {
-    if (!keyword.trim()) return;
-    setRegistering(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/businesses/${businessId}/tracked-keywords`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locationId, keyword, businessNameMatch: businessName }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "登録に失敗しました");
-      await loadTrackedKeywords();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setRegistering(false);
+      setStarting(false);
     }
   }
 
@@ -163,8 +158,8 @@ export default function RankCheckTab({
         頻繁な実行はアカウント/IPブロックの原因になります。自己責任でご利用ください。
       </p>
 
-      <form className={styles.scheduleForm} onSubmit={handleCheck}>
-        <h2 className={styles.sectionTitle}>順位を調べる</h2>
+      <form className={styles.scheduleForm} onSubmit={handleStartTracking}>
+        <h2 className={styles.sectionTitle}>キーワードの追跡を始める</h2>
         <label className={styles.locationSelect}>
           対象ロケーション:
           <select value={locationId} onChange={(e) => setLocationId(e.target.value)}>
@@ -190,26 +185,15 @@ export default function RankCheckTab({
           required
         />
         {error && <p className={styles.error}>{error}</p>}
-        <div style={{ display: "flex", gap: 10 }}>
-          <button className={styles.primaryButton} disabled={checking}>
-            {checking ? "確認中...(最大20秒程度)" : "今すぐ調べる"}
-          </button>
-          <button
-            type="button"
-            className={styles.secondaryButton}
-            onClick={handleRegisterKeyword}
-            disabled={registering || !keyword.trim()}
-          >
-            {registering ? "登録中..." : "このキーワードを定期チェック登録"}
-          </button>
-        </div>
+        <button className={styles.primaryButton} disabled={starting}>
+          {starting ? "確認中...(最大20秒程度)" : "追跡を始めて今すぐ調べる"}
+        </button>
       </form>
 
       <section>
-        <h2 className={styles.sectionTitle}>定期チェック登録キーワード</h2>
+        <h2 className={styles.sectionTitle}>追跡中のキーワード</h2>
         <p className={styles.postMeta}>
-          外部cronから <code>/api/cron/check-tracked-keywords</code> を定期実行(例: 1日1回)すると、
-          登録したキーワードを自動でチェックします。
+          アプリを起動している間、自動で1日1回チェックします(追加の設定は不要です)。
         </p>
         <div className={styles.rankList}>
           {trackedKeywords.length === 0 && (

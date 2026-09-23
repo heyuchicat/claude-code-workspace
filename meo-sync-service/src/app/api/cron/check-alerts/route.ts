@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getAdminSettings } from "@/lib/admin-settings";
-import { checkAlertsForAllBusinesses } from "@/lib/alerts";
+import { checkAllAlerts } from "@/lib/scheduled-jobs";
 
-// 外部cron(例: 1時間おき)から呼び出し、低評価クチコミ・順位低下を検知して通知する。
+// このエンドポイントは、アプリ起動中は自動的に内蔵スケジューラ(1時間おき)から
+// 呼ばれるため、通常は外部cronの設定は不要です。手動実行・動作確認用に残しています。
 // 例: curl -X POST https://<your-domain>/api/cron/check-alerts \
 //       -H "Authorization: Bearer <設定画面のCRON_SECRET>"
 
@@ -16,6 +17,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "認証に失敗しました" }, { status: 401 });
   }
 
-  const results = await checkAlertsForAllBusinesses();
+  const results = await checkAllAlerts();
   return NextResponse.json({ results });
 }
