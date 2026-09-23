@@ -20,7 +20,7 @@ Instagram連携・複数店舗管理・クチコミ返信・インサイト分�
   以降はアプリ起動中に自動で定期チェックし、順位の推移をグラフで確認できます。
   **⚠ Googleの利用規約に抵触しうる機能です。下記の注意事項を必ず読んでから使ってください。**
 - **Google Ads連携**: 広告で使っている検索キーワードを取得し、順位チェックの候補に自動反映
-  (Google Ads APIは別途アクセス申請・開発者トークンの取得が必要です)
+  (Google Ads APIは別途Google Cloud ConsoleでのAPIアクセス申請が必要です)
 - **口コミ依頼リンク・QRコード**: Googleクチコミ投稿ページへの直接リンクとQRコードを生成。
   店頭掲示やレシートへの印刷用
 - **月次レポート自動送付**: 検索/マップ閲覧数の推移・構成比、ユーザーの反応(電話・ルート検索・
@@ -101,10 +101,14 @@ Instagram / Google 連携用の環境変数(`INSTAGRAM_APP_ID` など)は空の�
 1. `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` は上記Googleビジネスプロフィールと共用します(新規発行不要)
 2. `.env` の `GOOGLE_ADS_REDIRECT_URI` に `<あなたのURL>/api/auth/google-ads/callback` を設定し、
    Google Cloud ConsoleのOAuthクライアントのリダイレクトURI一覧にも追加してください
-3. **重要:** Google Ads APIの利用には、Business Profile APIとは別に**開発者トークン(developer token)**の
-   取得申請・審査が必要です。[公式ドキュメント](https://developers.google.com/google-ads/api/docs/get-started/dev-token)
-   の手順に沿って申請し、取得したトークンを `.env` の `GOOGLE_ADS_DEVELOPER_TOKEN` に設定してください。
-   審査が下りるまではAPI呼び出しがエラーになります
+3. **重要:** 2026年9月9日付で開発者トークン(developer token)制度は廃止されました。現在は
+   APIアクセスレベルが `GOOGLE_CLIENT_ID` を発行した**Google Cloudプロジェクト**に直接紐づきます。
+   MCC(クライアントセンター)アカウントの「APIセンター」は使いません。
+   [Google Cloud Console](https://console.cloud.google.com/google/ads-apis/overview)の
+   Google Ads API概要ページから「Basicアクセス」を申請してください
+   (OAuth同意画面のブランド確認が済んでいれば数分で自動承認されます)。
+   `GOOGLE_ADS_DEVELOPER_TOKEN` は設定不要です(送っても無視されます)。
+   承認が下りるまではAPI呼び出しがエラーになります
 4. Google Ads APIのバージョンは頻繁に更新されるため、連携前に
    [公式ドキュメント](https://developers.google.com/google-ads/api/docs/start)で
    最新のエンドポイント・バージョンをご確認ください。`src/lib/google-ads-client.ts` に実装箇所があります

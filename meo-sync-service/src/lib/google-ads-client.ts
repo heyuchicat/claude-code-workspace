@@ -14,11 +14,14 @@ import {
 // 参考: https://developers.google.com/google-ads/api/docs/start
 //
 // 注意:
-// - このAPIを使うには、Google Business Profile APIとは別に、Google Ads側で
-//   「開発者トークン(developer token)」の取得申請・審査が必要です
-//   (https://developers.google.com/google-ads/api/docs/get-started/dev-token)。
-//   審査が下りるまでは GOOGLE_ADS_DEVELOPER_TOKEN 未設定として扱われ、
-//   関連APIはエラーを返します。
+// - 2026年9月9日付で開発者トークン(developer token)制度は廃止されました。
+//   現在はAPIアクセスレベルが、OAuthクライアントID/シークレットを発行した
+//   Google Cloudプロジェクトに直接紐づく方式になっています。MCC(クライアント
+//   センター)アカウントも不要です。申請は Google Cloud Console の
+//   https://console.cloud.google.com/google/ads-apis/overview から行います
+//   (https://developers.google.com/google-ads/api/docs/api-policy/developer-token)。
+//   developer-tokenヘッダーは送っても送らなくてもAPIサーバー側で無視されるため、
+//   GOOGLE_ADS_DEVELOPER_TOKEN は任意設定として扱う。
 // - APIバージョンは頻繁に更新されるため、実装時点の最新版を
 //   公式ドキュメントで必ず確認してください(下記は実装時点のバージョン)。
 
@@ -65,11 +68,15 @@ async function exchangeCodeForTokens(code: string) {
 }
 
 function adsHeaders(accessToken: string): HeadersInit {
-  return {
+  const headers: Record<string, string> = {
     Authorization: `Bearer ${accessToken}`,
-    "developer-token": requireEnv("GOOGLE_ADS_DEVELOPER_TOKEN"),
     "Content-Type": "application/json",
   };
+  // 開発者トークンは廃止済みでAPIサーバー側に無視されるが、設定されていれば
+  // 後方互換のため送っておく(未設定でもエラーにはしない)。
+  const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+  if (developerToken) headers["developer-token"] = developerToken;
+  return headers;
 }
 
 async function fetchDescriptiveName(
