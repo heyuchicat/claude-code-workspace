@@ -1,6 +1,5 @@
 import {
   fetchInstagramPostById,
-  fetchInstagramPosts,
   createGoogleBusinessPost,
 } from "./data-source";
 import { store } from "./store";
@@ -55,27 +54,4 @@ export async function linkInstagramPostToGoogle(
   await store.addLinkMapping(businessId, mapping);
 
   return mapping;
-}
-
-// 未連携のInstagram投稿をすべて指定ロケーションへ一括同期する。
-export async function syncAllUnlinkedPosts(businessId: string, locationId: string) {
-  const posts = await fetchInstagramPosts(businessId);
-  const results: { instagramPostId: string; ok: boolean; error?: string }[] =
-    [];
-
-  for (const post of posts) {
-    if (await store.findLinkByInstagramPostId(businessId, post.id)) continue;
-    try {
-      await linkInstagramPostToGoogle(businessId, post.id, locationId);
-      results.push({ instagramPostId: post.id, ok: true });
-    } catch (err) {
-      results.push({
-        instagramPostId: post.id,
-        ok: false,
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
-  }
-
-  return results;
 }

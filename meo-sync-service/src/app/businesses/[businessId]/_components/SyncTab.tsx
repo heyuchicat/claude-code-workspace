@@ -32,7 +32,6 @@ export default function SyncTab({
   const [googlePosts, setGooglePosts] = useState<GoogleBusinessPost[]>([]);
   const [locationId, setLocationId] = useState<string>("");
   const [syncingId, setSyncingId] = useState<string | null>(null);
-  const [syncingAll, setSyncingAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
@@ -79,38 +78,6 @@ export default function SyncTab({
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSyncingId(null);
-    }
-  }
-
-  async function handleSyncAll() {
-    if (!locationId) return;
-    setSyncingAll(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/businesses/${businessId}/sync/all`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locationId }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "一括同期に失敗しました");
-      const results = (data.results ?? []) as {
-        instagramPostId: string;
-        ok: boolean;
-        error?: string;
-      }[];
-      const failed = results.filter((r) => !r.ok);
-      if (failed.length > 0) {
-        const firstError = failed[0].error ?? "不明なエラー";
-        setError(
-          `${failed.length}件の同期に失敗しました(例: ${firstError})`
-        );
-      }
-      await loadAll();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setSyncingAll(false);
     }
   }
 
@@ -212,15 +179,6 @@ export default function SyncTab({
             ))}
           </select>
         </label>
-        <button
-          className={styles.primaryButton}
-          onClick={handleSyncAll}
-          disabled={syncingAll || unlinkedCount === 0}
-        >
-          {syncingAll
-            ? "同期中..."
-            : `未連携の投稿をすべて同期 (${unlinkedCount}件)`}
-        </button>
       </section>
 
       <section className={styles.statsRow}>
