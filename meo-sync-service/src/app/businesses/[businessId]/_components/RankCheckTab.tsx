@@ -61,8 +61,9 @@ export default function RankCheckTab({
   const [keyword, setKeyword] = useState("");
   const [results, setResults] = useState<RankCheckResult[]>([]);
   const [trackedKeywords, setTrackedKeywords] = useState<TrackedKeyword[]>([]);
+  const [suggestions, setSuggestions] = useState<{ keyword: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [starting, setStarting] = useState(false);
+  const [starting, setStarting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadLocations = useCallback(async () => {
@@ -91,6 +92,15 @@ export default function RankCheckTab({
     setTrackedKeywords(data.keywords ?? []);
   }, [businessId]);
 
+  const loadSuggestions = useCallback(async () => {
+    if (!locationId) return;
+    const res = await fetch(
+      `/api/businesses/${businessId}/tracked-keywords/suggestions?locationId=${encodeURIComponent(locationId)}`
+    );
+    const data = await res.json();
+    setSuggestions(data.suggestions ?? []);
+  }, [businessId, locationId]);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadLocations();
@@ -99,24 +109,29 @@ export default function RankCheckTab({
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadSuggestions();
+  }, [loadSuggestions]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadResults();
   }, [loadResults]);
 
   // キーワードの追跡登録(未登録の場合のみ)と、その場での初回チェックを1操作でまとめて行う。
   // 以降の定期チェックはアプリ起動中、内蔵スケジューラが自動で行う(cron設定は不要)。
-  async function handleStartTracking(e: React.FormEvent) {
-    e.preventDefault();
-    setStarting(true);
+  async function startTracking(targetKeyword: string) {
+    if (!targetKeyword.trim()) return;
+    setStarting(targetKeyword);
     setError(null);
     try {
       const alreadyTracked = trackedKeywords.some(
-        (k) => k.keyword === keyword && k.locationId === locationId
+        (k) => k.keyword === targetKeyword && k.locationId === locationId
       );
       if (!alreadyTracked) {
         const res = await fetch(`/api/businesses/${businessId}/tracked-keywords`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ locationId, keyword, businessNameMatch: businessName }),
+          body: JSON.stringify({ locationId, keyword: targetKeyword, businessNameMatch: businessName }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "登録に失敗しました");
@@ -126,16 +141,21 @@ export default function RankCheckTab({
       const checkRes = await fetch(`/api/businesses/${businessId}/rank-checks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locationId, keyword, businessName }),
+        body: JSON.stringify({ locationId, keyword: targetKeyword, businessName }),
       });
       const checkData = await checkRes.json();
       if (!checkRes.ok) throw new Error(checkData.error ?? "順位チェックに失敗しました");
-      await loadResults();
+      await Promise.all([loadResults(), loadSuggestions()]);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setStarting(false);
+      setStarting(null);
     }
+  }
+
+  function handleStartTracking(e: React.FormEvent) {
+    e.preventDefault();
+    startTracking(keyword);
   }
 
   async function handleRemoveKeyword(id: string) {
@@ -185,10 +205,42 @@ export default function RankCheckTab({
           required
         />
         {error && <p className={styles.error}>{error}</p>}
-        <button className={styles.primaryButton} disabled={starting}>
+        <button className={styles.primaryButton} disabled={starting !== null}>
           {starting ? "確認中...(最大20秒程度)" : "追跡を始めて今すぐ調べる"}
         </button>
       </form>
+
+      <section>
+        <h2 className={styles.sectionTitle}>キーワード候補</h2>
+        <p className={styles.postMeta}>
+          実際にお客様がこの店舗を検索で見つけた際に使ったキーワード(公式インサイトデータ)です。
+          クリックするとそのまま追跡を開始します。
+        </p>
+        <div className={styles.keywordList}>
+          {suggestions.length === 0 && (
+            <p className={styles.emptyState}>候補はまだありません。</p>
+          )}
+          {suggestions.map((s) => (
+            <button
+              key={s.keyword}
+              type="button"
+              className={styles.keywordRow}
+              onClick={() => startTracking(s.keyword)}
+              disabled={starting !== null || !businessName.trim()}
+              style={{
+                background: "none",
+                font: "inherit",
+                textAlign: "left",
+                width: "100%",
+                cursor: starting !== null || !businessName.trim() ? "default" : "pointer",
+              }}
+            >
+              <span>{starting === s.keyword ? "確認中..." : s.keyword}</span>
+              <span className={styles.keywordCount}>{s.count}</span>
+            </button>
+          ))}
+        </div>
+      </section>
 
       <section>
         <h2 className={styles.sectionTitle}>追跡中のキーワード</h2>
