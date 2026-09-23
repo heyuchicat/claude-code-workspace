@@ -37,6 +37,7 @@ model Business {
   competitors      Competitor[]
   externalListings ExternalListing[]
   alertedReviews   AlertedReview[]
+  adKeywords       AdKeyword[]
 }
 
 // Instagram / Google それぞれのOAuth接続情報を店舗ごとに保持する。
@@ -176,4 +177,31 @@ model PendingGoogleConnection {
   expiresAt     DateTime
   accountsJson  String // JSON文字列: [{ name, accountName }]
   createdAt     DateTime @default(now())
+}
+
+// Google Ads OAuth完了直後、アクセス可能な広告アカウント(顧客)が複数ある場合に
+// 「どの広告アカウントをこの店舗に紐づけるか」を選ぶまでの一時保管領域(TTL 10分)。
+model PendingGoogleAdsConnection {
+  id            String   @id @default(cuid())
+  businessId    String
+  accessToken   String
+  refreshToken  String
+  expiresAt     DateTime
+  customersJson String // JSON文字列: [{ resourceName, descriptiveName }]
+  createdAt     DateTime @default(now())
+}
+
+// Google Ads側で実際に使われている検索キーワードを、広告アカウント連携後に蓄積する。
+// 順位チェックのキーワード候補として使う。
+model AdKeyword {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerId String // Google Ads顧客ID(例: "1234567890")
+  keyword    String
+  matchType  String? // EXACT / PHRASE / BROAD 等
+  status     String? // ENABLED 等
+  fetchedAt  DateTime @default(now())
+
+  @@unique([businessId, customerId, keyword])
 }

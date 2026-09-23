@@ -1,6 +1,6 @@
 import { prisma } from "./db";
 
-export type Provider = "instagram" | "google";
+export type Provider = "instagram" | "google" | "google_ads";
 
 export type ConnectionRecord = {
   businessId: string;

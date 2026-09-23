@@ -62,6 +62,11 @@ export default function RankCheckTab({
   const [results, setResults] = useState<RankCheckResult[]>([]);
   const [trackedKeywords, setTrackedKeywords] = useState<TrackedKeyword[]>([]);
   const [suggestions, setSuggestions] = useState<{ keyword: string; count: number }[]>([]);
+  const [adsConnected, setAdsConnected] = useState(false);
+  const [adKeywords, setAdKeywords] = useState<
+    { id: string; keyword: string; matchType: string | null }[]
+  >([]);
+  const [syncingAds, setSyncingAds] = useState(false);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -101,11 +106,38 @@ export default function RankCheckTab({
     setSuggestions(data.suggestions ?? []);
   }, [businessId, locationId]);
 
+  const loadAdStatus = useCallback(async () => {
+    const [statusRes, keywordsRes] = await Promise.all([
+      fetch(`/api/businesses/${businessId}/auth/status`),
+      fetch(`/api/businesses/${businessId}/ad-keywords`),
+    ]);
+    const statusData = await statusRes.json();
+    const keywordsData = await keywordsRes.json();
+    setAdsConnected(Boolean(statusData.googleAds?.connected));
+    setAdKeywords(keywordsData.keywords ?? []);
+  }, [businessId]);
+
+  async function handleSyncAdKeywords() {
+    setSyncingAds(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/businesses/${businessId}/ad-keywords`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "広告キーワードの取得に失敗しました");
+      setAdKeywords(data.keywords ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSyncingAds(false);
+    }
+  }
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadLocations();
     loadTrackedKeywords();
-  }, [loadLocations, loadTrackedKeywords]);
+    loadAdStatus();
+  }, [loadLocations, loadTrackedKeywords, loadAdStatus]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -240,6 +272,69 @@ export default function RankCheckTab({
             </button>
           ))}
         </div>
+      </section>
+
+      <section>
+        <h2 className={styles.sectionTitle}>広告キーワードから追加</h2>
+        {adsConnected ? (
+          <>
+            <p className={styles.postMeta}>
+              Google Adsで入札設定している検索キーワードです。クリックすると追跡を開始します。
+            </p>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={handleSyncAdKeywords}
+              disabled={syncingAds}
+              style={{ marginBottom: 8 }}
+            >
+              {syncingAds ? "更新中..." : "Google Adsから最新のキーワードを取得"}
+            </button>
+            <div className={styles.keywordList}>
+              {adKeywords.filter((k) => !trackedKeywords.some((t) => t.keyword === k.keyword))
+                .length === 0 && (
+                <p className={styles.emptyState}>
+                  候補はありません。「Google Adsから最新のキーワードを取得」を押してください。
+                </p>
+              )}
+              {adKeywords
+                .filter((k) => !trackedKeywords.some((t) => t.keyword === k.keyword))
+                .map((k) => (
+                  <button
+                    key={k.id}
+                    type="button"
+                    className={styles.keywordRow}
+                    onClick={() => startTracking(k.keyword)}
+                    disabled={starting !== null || !businessName.trim()}
+                    style={{
+                      background: "none",
+                      font: "inherit",
+                      textAlign: "left",
+                      width: "100%",
+                      cursor: starting !== null || !businessName.trim() ? "default" : "pointer",
+                    }}
+                  >
+                    <span>{starting === k.keyword ? "確認中..." : k.keyword}</span>
+                    {k.matchType && <span className={styles.keywordCount}>{k.matchType}</span>}
+                  </button>
+                ))}
+            </div>
+          </>
+        ) : (
+          <div className={styles.accountCard}>
+            <span className={styles.accountLabel}>Google Ads</span>
+            <p className={styles.postMeta}>
+              広告で使っているキーワードを自動で候補に追加できます。Google Ads APIは
+              別途アクセス申請・開発者トークンの取得が必要です(README参照)。
+            </p>
+            <a
+              className={styles.connectButton}
+              href={`/api/auth/google-ads/start?businessId=${businessId}`}
+            >
+              Google Adsを連携する
+            </a>
+          </div>
+        )}
       </section>
 
       <section>

@@ -18,6 +18,8 @@ import * as realReviews from "./google-reviews-client";
 import * as realInsights from "./google-insights-client";
 import * as realQa from "./google-qa-client";
 import * as realProducts from "./google-products-client";
+import * as mockGoogleAds from "./mock-google-ads";
+import * as realGoogleAds from "./google-ads-client";
 import { store } from "./store";
 import { logReviewReply } from "./review-store";
 import { logQaAnswer } from "./qa-store";
@@ -28,7 +30,7 @@ export type { CreateGoogleBusinessPostInput, CreateProductInput };
 
 async function isConnected(
   businessId: string,
-  provider: "instagram" | "google"
+  provider: "instagram" | "google" | "google_ads"
 ): Promise<boolean> {
   return (await getConnection(businessId, provider)) !== null;
 }
@@ -220,9 +222,10 @@ export async function fetchGbpProfileFields(businessId: string, locationId: stri
 }
 
 export async function getConnectionStatus(businessId: string) {
-  const [instagram, google] = await Promise.all([
+  const [instagram, google, googleAds] = await Promise.all([
     getConnection(businessId, "instagram"),
     getConnection(businessId, "google"),
+    getConnection(businessId, "google_ads"),
   ]);
   return {
     instagram: instagram
@@ -231,5 +234,18 @@ export async function getConnectionStatus(businessId: string) {
     google: google
       ? { connected: true as const, label: google.externalLabel }
       : { connected: false as const },
+    googleAds: googleAds
+      ? { connected: true as const, label: googleAds.externalLabel }
+      : { connected: false as const },
   };
+}
+
+export async function fetchAdKeywords(businessId: string): Promise<{
+  customerId: string;
+  keywords: { keyword: string; matchType: string | null; status: string | null }[];
+}> {
+  if (await isConnected(businessId, "google_ads")) {
+    return realGoogleAds.fetchRealAdKeywords(businessId);
+  }
+  return mockGoogleAds.fetchAdKeywords();
 }

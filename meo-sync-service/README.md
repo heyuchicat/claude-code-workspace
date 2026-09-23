@@ -15,10 +15,12 @@ Instagram連携・複数店舗管理・クチコミ返信・インサイト分�
 - **Q&A管理**: Googleに寄せられた質問への回答
 - **商品・サービスカタログ**: Googleビジネスプロフィール上に商品名・価格・写真を掲載し、検索結果・マップ上で目立たせる(Google Adsのような有料広告ではなく、プロフィール上の公式な商品掲載機能)。写真もファイルアップロード対応
 - **検索順位チェック(実験的)**: Googleマップでの検索順位を自動チェック。実際にお客様が
-  この店舗を見つけるのに使った検索キーワード(公式インサイトデータ)を候補として自動提案し、
-  クリックするだけで追跡を開始できます。以降はアプリ起動中に自動で定期チェックし、
-  順位の推移をグラフで確認できます。
+  この店舗を見つけるのに使った検索キーワード(公式インサイトデータ)や、Google Ads連携時は
+  広告で入札設定しているキーワードを候補として自動提案し、クリックするだけで追跡を開始できます。
+  以降はアプリ起動中に自動で定期チェックし、順位の推移をグラフで確認できます。
   **⚠ Googleの利用規約に抵触しうる機能です。下記の注意事項を必ず読んでから使ってください。**
+- **Google Ads連携**: 広告で使っている検索キーワードを取得し、順位チェックの候補に自動反映
+  (Google Ads APIは別途アクセス申請・開発者トークンの取得が必要です)
 - **口コミ依頼リンク・QRコード**: Googleクチコミ投稿ページへの直接リンクとQRコードを生成。
   店頭掲示やレシートへの印刷用
 - **月次レポート自動送付**: 検索/マップ閲覧数の推移・構成比、ユーザーの反応(電話・ルート検索・
@@ -90,6 +92,24 @@ Instagram / Google 連携用の環境変数(`INSTAGRAM_APP_ID` など)は空の�
 5. Google側のAPI仕様(特にlocalPosts/reviews/questions関連)は改訂されることがあるため、連携前に
    [公式ドキュメント](https://developers.google.com/my-business/content/overview)で
    最新のエンドポイントをご確認ください。`src/lib/google-*.ts` に実装箇所があります。
+
+### Google Ads連携(検索キーワードの自動取得)
+
+順位チェックタブの「広告キーワードから追加」で、Google Adsで入札設定しているキーワードを
+自動取得し、順位追跡の候補として使えます。
+
+1. `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` は上記Googleビジネスプロフィールと共用します(新規発行不要)
+2. `.env` の `GOOGLE_ADS_REDIRECT_URI` に `<あなたのURL>/api/auth/google-ads/callback` を設定し、
+   Google Cloud ConsoleのOAuthクライアントのリダイレクトURI一覧にも追加してください
+3. **重要:** Google Ads APIの利用には、Business Profile APIとは別に**開発者トークン(developer token)**の
+   取得申請・審査が必要です。[公式ドキュメント](https://developers.google.com/google-ads/api/docs/get-started/dev-token)
+   の手順に沿って申請し、取得したトークンを `.env` の `GOOGLE_ADS_DEVELOPER_TOKEN` に設定してください。
+   審査が下りるまではAPI呼び出しがエラーになります
+4. Google Ads APIのバージョンは頻繁に更新されるため、連携前に
+   [公式ドキュメント](https://developers.google.com/google-ads/api/docs/start)で
+   最新のエンドポイント・バージョンをご確認ください。`src/lib/google-ads-client.ts` に実装箇所があります
+5. 取得するのは「広告主が入札対象に設定しているキーワード」であり、実際に検索されて
+   広告が表示された語句(検索語句レポート)とは異なります
 
 ### 競合比較機能(Google Places API)
 
@@ -223,19 +243,22 @@ src/
                                    RankCheckTab, ReportTab, NotificationSettingsTab,
                                    ExternalListingsTab
       select-google-account/      Google連携時、アクセス可能な顧客が複数ある場合の選択画面
+      select-google-ads-account/  Google Ads連携時、アクセス可能な広告アカウントが複数ある場合の選択画面
     api/
       setup/                      初回セットアップ(GET状態確認 / POST作成)
       settings/                   cron秘密鍵の確認・再生成、パスワード変更
       auth/login/                 管理者ログイン/ログアウト
       auth/instagram/start,callback/  Instagram OAuth(店舗IDはstateパラメータで受け渡し)
       auth/google/start,callback/     Google OAuth(同上)
+      auth/google-ads/start,callback/ Google Ads OAuth(同上)
       businesses/                 店舗のCRUD(PATCHで通知先メール・Slack Webhook設定)
       businesses/[businessId]/
         auth/status, auth/*/disconnect  接続状態・接続解除
         google-account-selection/  Google連携時の複数アカウント選択(一覧取得・確定)
+        google-ads-account-selection/  Google Ads連携時の複数アカウント選択(同上)
         instagram/account,posts   Instagram投稿取得
         google/locations,posts    Googleロケーション・投稿取得
-        sync/, sync/all/          投稿の連携実行
+        sync/                     投稿の連携実行(1件ずつ)
         reviews/, reviews/reply/  クチコミ取得・返信
         review-link/              口コミ依頼リンク・QRコード生成
         insights/                 インサイト取得
@@ -245,11 +268,13 @@ src/
         scheduled-posts/          予約投稿のCRUD
         rank-checks/              順位チェックの実行・履歴取得
         tracked-keywords/         定期チェック登録キーワードのCRUD
+        tracked-keywords/suggestions/  インサイトデータからのキーワード候補提案
+        ad-keywords/              Google Ads検索キーワードの取得・保存
         report/                   月次レポートPDFの手動ダウンロード
         test-notification/        通知設定のテスト送信
         external-listings/        外部プラットフォーム参照リンクのCRUD
         uploads/                  画像アップロード(予約投稿・商品写真用)
-      cron/publish-scheduled-posts/  予約投稿の自動公開(cron秘密鍵で保護)
+      cron/publish-scheduled-posts/  予約投稿の自動公開(手動実行用。通常は内蔵スケジューラが自動実行)
       cron/check-tracked-keywords/   登録キーワードの順位チェック(同上)
       cron/check-alerts/             低評価クチコミ・順位低下のアラート通知(同上)
       cron/send-monthly-reports/     月次レポートのメール自動送付(同上)
@@ -259,13 +284,17 @@ src/
     businesses.ts                店舗(テナント)のDBアクセス
     connections.ts                OAuth接続情報(トークン)のDBアクセス(店舗別)
     pending-google-connection.ts  Google連携で複数アカウントから選択するまでの一時保管
+    pending-google-ads-connection.ts  Google Ads連携で複数アカウントから選択するまでの一時保管
     store.ts                     投稿連携履歴(LinkMapping)のDBアクセス
     review-store.ts / qa-store.ts  返信・回答の監査ログ
     scheduled-posts-store.ts     予約投稿のDBアクセス
     rank-checks-store.ts         順位チェック履歴のDBアクセス
     tracked-keywords-store.ts    定期チェック登録キーワードのDBアクセス
+    ad-keywords-store.ts         Google Ads検索キーワードのDBアクセス
     competitors-store.ts         競合店登録のDBアクセス
     external-listings-store.ts   外部プラットフォーム参照リンクのDBアクセス
+    location-match.ts            店舗名とGoogleロケーション名の突き合わせ(他クライアント漏れ防止)
+    scheduled-jobs.ts            予約投稿公開・順位チェック・アラート・月次レポート送付の実処理
     mock-*.ts                   各機能のダミークライアント(デモモード用)
     instagram-client.ts          Instagram実APIクライアント
     google-business-client.ts    Google実APIクライアント(OAuth・投稿)
@@ -274,6 +303,7 @@ src/
     google-qa-client.ts          Google Q&A実APIクライアント
     google-products-client.ts    Google商品・サービス(Products)実APIクライアント
     google-places-client.ts      Google Places API(競合比較用、APIキー方式)
+    google-ads-client.ts         Google Ads実APIクライアント(OAuth・検索キーワード取得)
     rank-checker.ts              検索順位チェック(Playwright, 実験的)
     browser.ts                   Playwright Chromium起動の共通処理
     review-link.ts               口コミ依頼リンク・QRコード生成
@@ -291,9 +321,10 @@ src/
   instrumentation.ts             アプリ起動時に内蔵スケジューラを立ち上げる(cron設定不要化)
   generated/prisma/             Prisma Client(自動生成。gitignore対象)
 prisma/schema.prisma           DBスキーマ(AdminSettings, Business, Connection,
-                                PendingGoogleConnection, LinkMapping, ScheduledPost,
-                                QAEntry, ReviewReply, RankCheck, TrackedKeyword,
-                                Competitor, ExternalListing, AlertedReview)
+                                PendingGoogleConnection, PendingGoogleAdsConnection,
+                                LinkMapping, ScheduledPost, QAEntry, ReviewReply,
+                                RankCheck, TrackedKeyword, AdKeyword, Competitor,
+                                ExternalListing, AlertedReview)
 ```
 
 ## デプロイ時の注意
