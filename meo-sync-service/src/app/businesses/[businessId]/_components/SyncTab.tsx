@@ -94,6 +94,18 @@ export default function SyncTab({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "一括同期に失敗しました");
+      const results = (data.results ?? []) as {
+        instagramPostId: string;
+        ok: boolean;
+        error?: string;
+      }[];
+      const failed = results.filter((r) => !r.ok);
+      if (failed.length > 0) {
+        const firstError = failed[0].error ?? "不明なエラー";
+        setError(
+          `${failed.length}件の同期に失敗しました(例: ${firstError})`
+        );
+      }
       await loadAll();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
