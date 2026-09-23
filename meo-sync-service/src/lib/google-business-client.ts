@@ -328,6 +328,8 @@ export async function createRealGoogleBusinessPost(
   return toGoogleBusinessPost(data, input.locationId, input.sourceInstagramPostId);
 }
 
+const MAX_GOOGLE_POST_PAGES = 8; // 過去の投稿もある程度遡って拾えるようにページングする
+
 export async function fetchRealGoogleBusinessPosts(
   businessId: string,
   locationId: string,
@@ -337,19 +339,34 @@ export async function fetchRealGoogleBusinessPosts(
     await getValidGoogleAccessToken(businessId);
   const parent = `${accountResourceName}/${locationId}`;
 
-  const res = await fetch(`${LEGACY_MYBUSINESS_BASE}/${parent}/localPosts`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  if (!res.ok) {
-    throw new Error(`Google投稿一覧の取得に失敗しました: ${await res.text()}`);
-  }
-  const data = await res.json();
-  return ((data.localPosts ?? []) as { name: string; summary?: string; createTime?: string; state?: string; media?: { googleUrl?: string }[] }[]).map(
-    (raw) =>
-      toGoogleBusinessPost(
-        raw,
-        locationId,
-        sourceInstagramPostIdByPostName.get(raw.name) ?? ""
+  type RawPost = { name: string; summary?: string; createTime?: string; state?: string; media?: { googleUrl?: string }[] };
+  const posts: GoogleBusinessPost[] = [];
+  let pageToken: string | undefined;
+  let pageCount = 0;
+
+  do {
+    const url = new URL(`${LEGACY_MYBUSINESS_BASE}/${parent}/localPosts`);
+    if (pageToken) url.searchParams.set("pageToken", pageToken);
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) {
+      throw new Error(`Google投稿一覧の取得に失敗しました: ${await res.text()}`);
+    }
+    const data = await res.json();
+    posts.push(
+      ...((data.localPosts ?? []) as RawPost[]).map((raw) =>
+        toGoogleBusinessPost(
+          raw,
+          locationId,
+          sourceInstagramPostIdByPostName.get(raw.name) ?? ""
+        )
       )
-  );
+    );
+    pageToken = data.nextPageToken;
+    pageCount += 1;
+  } while (pageToken && pageCount < MAX_GOOGLE_POST_PAGES);
+
+  return posts;
 }

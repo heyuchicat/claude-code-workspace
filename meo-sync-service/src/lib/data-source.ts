@@ -93,7 +93,15 @@ export async function fetchGoogleBusinessPosts(
   }
 
   const mappings = await store.listLinkMappings(businessId);
-  const locationIds = [...new Set(mappings.map((m) => m.locationId))];
+  // まだ一度もこのアプリ経由で同期していなくても、連携済みロケーションに
+  // 既存の投稿(このアプリ導入前にGoogle側で作成されたもの)があれば拾えるようにする。
+  const connectedLocations = await fetchGoogleBusinessLocations(businessId);
+  const locationIds = [
+    ...new Set([
+      ...mappings.map((m) => m.locationId),
+      ...connectedLocations.map((l) => l.id),
+    ]),
+  ];
   const postNameToInstagramId = new Map(
     mappings.map((m) => [m.googleBusinessPostId, m.instagramPostId])
   );

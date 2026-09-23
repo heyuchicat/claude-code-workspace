@@ -170,6 +170,8 @@ function toInstagramPost(media: InstagramMediaResponse): InstagramPost {
   };
 }
 
+const MAX_INSTAGRAM_POST_PAGES = 8; // 1ページ25件想定で最大200件程度の過去投稿まで遡る
+
 export async function fetchRealInstagramPosts(
   businessId: string
 ): Promise<InstagramPost[]> {
@@ -178,12 +180,22 @@ export async function fetchRealInstagramPosts(
   url.searchParams.set("fields", MEDIA_FIELDS);
   url.searchParams.set("access_token", accessToken);
 
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Instagram投稿取得に失敗しました: ${await res.text()}`);
+  const posts: InstagramPost[] = [];
+  let nextUrl: string | undefined = url.toString();
+  let pageCount = 0;
+
+  while (nextUrl && pageCount < MAX_INSTAGRAM_POST_PAGES) {
+    const res: Response = await fetch(nextUrl);
+    if (!res.ok) {
+      throw new Error(`Instagram投稿取得に失敗しました: ${await res.text()}`);
+    }
+    const data = await res.json();
+    posts.push(...(data.data as InstagramMediaResponse[]).map(toInstagramPost));
+    nextUrl = data.paging?.next;
+    pageCount += 1;
   }
-  const data = await res.json();
-  return (data.data as InstagramMediaResponse[]).map(toInstagramPost);
+
+  return posts;
 }
 
 export async function fetchRealInstagramPostById(
